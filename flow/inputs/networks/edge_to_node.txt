@@ -1,0 +1,12 @@
+# type: node_to_node, edge_to_node,
+edge_to_node
+# number of horizontal nodes (integer), number of vertical nodes (integer)
+3,3
+# source edge (string), termination node id (string), probability of selecting these pair (float)
+from00to10,22,0.5
+from01to00,20,0.1
+from10to11,02,0.1
+from20to10,02,0.1
+from21to20,00,0.1
+from12to11,11,0.05
+from22to21,01,0.05

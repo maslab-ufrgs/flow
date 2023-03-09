@@ -1,9 +1,11 @@
 """Contains a list of custom routing controllers."""
+from copy import deepcopy
 import random
 import numpy as np
 
 from flow.controllers.base_routing_controller import BaseRouter
-
+from flow.networks.MyGrid import ADDITIONAL_NET_PARAMS
+from flow.utils.dijkstra import *
 
 class ContinuousRouter(BaseRouter):
     """A router used to continuously re-route of the vehicle in a closed ring.
@@ -150,3 +152,64 @@ class I210Router(ContinuousRouter):
             new_route = super().choose_route(env)
 
         return new_route
+
+class MyGridRandomRouter(BaseRouter):
+    def choose_route(self, env):
+        current_edge = env.k.vehicle.get_edge(self.veh_id)
+        current_route = env.k.vehicle.get_route(self.veh_id)
+
+        if len(current_route) == 0:
+            return None
+        else:
+            rts_dict = deepcopy(env.k.network.rts)
+            available_rts = []
+            for key in rts_dict:
+                for tup in rts_dict[key]:
+                    if current_edge in tup[0]:
+                        counter = 0
+                        while current_edge != tup[0][counter]:
+                            counter += 1
+                        del tup[0][0:counter]
+                        available_rts.append(tup[0])
+            if len(available_rts) == 0:
+                return None
+            else: 
+                route_index = np.random.choice(len(available_rts), size=1)[0]
+                return available_rts[route_index]
+
+class MyGridRouterOnlyWhenVehiclesAreReseting(BaseRouter):
+    def choose_route(self, env):
+        veh_id = self.veh_id
+        edge = env.k.vehicle.get_edge(veh_id)
+        env.update_vehicle_route(veh_id, edge)
+        # if environment is reseting: apply dijkstra to get shortest path.
+        if env.could_add_path(veh_id):
+            route = gen_dijkstra_route(env, edge, veh_id)
+            if len(route) > 0 and route[0] == edge:
+                env.add_path(veh_id, route)
+                return route
+            else:
+                return None
+        return super().choose_route(env)
+
+class MyGridRouterAppliedOnEachEdge(BaseRouter):
+    def choose_route(self, env):
+        veh_id = self.veh_id
+        edge = env.k.vehicle.get_edge(veh_id)
+        env.update_current_vehicles_data(veh_id, edge)
+        if env.is_vehicle_reseting(veh_id):
+            route = gen_dijkstra_route(env, edge, veh_id)
+            env.vehicle_reseted(veh_id) 
+            if not route is None and route[0] == edge:
+                return route
+            else:
+                return None
+        elif env.has_vehicle_changed_edge(veh_id):
+            print(veh_id)
+            route = gen_dijkstra_route(env, edge, veh_id)
+            env.set_vehicle_has_changed_lane_flag_false(veh_id) 
+            if not route is None and route[0] == edge:
+                return route
+            else:
+                return None
+        return super().choose_route(env)

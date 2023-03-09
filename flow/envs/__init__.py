@@ -18,6 +18,7 @@ from flow.envs.bottleneck_env import BottleNeckAccelEnv
 from flow.envs.bottleneck_env import DesiredVelocityEnv
 from flow.envs.green_wave_env import PO_TrafficLightGridEnv
 from flow.envs.green_wave_env import GreenWaveTestEnv
+from flow.envs.myEnvironment import myEnvironment
 
 
 __all__ = [
@@ -42,4 +43,5 @@ __all__ = [
     'DesiredVelocityEnv',
     'PO_TrafficLightGridEnv',
     'GreenWaveTestEnv',
+    'myEnvironment'
 ]
