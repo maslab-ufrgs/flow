@@ -230,7 +230,7 @@ class myEnvironment(Env):
         self.freeflow = {}
         self.costs = {}
         self.calculate_freeflow()
-        self.calculate_costs()
+        self.calculate_costs(env_params)
         self.database.from_str(self.initial_ids, self.k.network.get_edge_list(), self.freeflow)
 
     @property
@@ -268,8 +268,9 @@ class myEnvironment(Env):
 
     def reset(self):    
         if self.execution == FIRST_EXECUTION:
-            edges_to_csv(self.k.network._edge_list)
-            junctions_to_csv(self.k.network._junction_list)
+            
+            edges_to_csv(self.k.network._edge_list, self.env_params.additional_params['edges_path'])
+            junctions_to_csv(self.k.network._junction_list, self.env_params.additional_params['junctions_path'])
 
         self.database.new_execution()
         self.execution += 1
@@ -310,7 +311,7 @@ class myEnvironment(Env):
     def get_toll_cost(self, edge):
         return self.costs[edge]
 
-    def calculate_costs(self, option=1):
+    def calculate_costs(self, env_params, option=1):
         # TODO: alterar esse metodo para que o usuario escolha, via cmd line, qual a preferencia dele por pedagio:
         # opcoes:
         #   1. gerado via input file
@@ -320,7 +321,7 @@ class myEnvironment(Env):
             edges = self.k.network.get_edge_list()
             junctions = self.k.network.get_junction_list()
             junctions_cost = 0
-            input_file = '/home/macsilva/Desktop/maslab/flow/flow/inputs/networks/costs.txt'
+            input_file = env_params.additional_params["costs_path"]
             read_edges_cost_input_file(input_file)
             for edge in edges:
                 self.costs[edge] = deepcopy(get_cost_from_input_file(edge))
@@ -342,17 +343,17 @@ class myEnvironment(Env):
         for edge in edges:
             self.freeflow[edge] = deepcopy(self.freeflow_time(edge))
 
-def edges_to_csv(edges):
+def edges_to_csv(edges, edgespath):
     header = ["edge"]
-    with open('/home/macsilva/Desktop/maslab/flow/data/edges.csv', 'w') as file:
+    with open(edgespath, 'w') as file:
         writer = csv.writer(file)
         writer.writerow(header)
         for e in edges:
             writer.writerow([e])
 
-def junctions_to_csv(junctions):
+def junctions_to_csv(junctions, junctionspath):
     header = ["junction"]
-    with open('/home/macsilva/Desktop/maslab/flow/data/junctions.csv', 'w') as file:
+    with open(junctionspath, 'w') as file:
         writer = csv.writer(file)
         writer.writerow(header)
         for j in junctions:

@@ -1,28 +1,43 @@
 from copy import deepcopy
-from flow.controllers import IDMController, MyGridRouterOnlyWhenVehiclesAreReseting as Router
+from flow.controllers import *
 from flow.core import experiment
 from flow.core.params import SumoParams, EnvParams, InitialConfig, NetParams
 from flow.core.params import VehicleParams, SumoCarFollowingParams
-from flow.envs.myEnvironment import myEnvironment
-from flow.networks.MyGrid import MyGrid, ADDITIONAL_NET_PARAMS
+from flow.envs import *
+from flow.networks import *
 import pandas as pd
 import os
 
-def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder='0',num_runs=1, horizon=3000, sim_step=0.1, bunching=40, save_data=True):
+def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder='0', host='lab',num_runs=1, horizon=3000, sim_step=0.1, bunching=40, save_data=True):
     vehicles = VehicleParams()
     vehicles.add(
                 veh_id="human",
                 acceleration_controller=(IDMController, {}),
-                routing_controller=(Router, {}),
+                routing_controller=(MyGridRouterOnlyWhenVehiclesAreReseting, {}),
                 num_vehicles=num_vehicles,
                 )
-    emission_path = create_dir(individual_id, individual_subfolder, exp_tag)
-    sim_params = SumoParams(sim_step=sim_step, emission_path=emission_path, render=True)
+    if host == 'lab':
+        parentdir= '/home/lab204/Desktop/marco/maslab/flow/data'
+        costspath= '/home/lab204/Desktop/marco/maslab/flow/flow/inputs/networks/costs.txt'
+        edgespath= '/home/lab204/Desktop/marco/maslab/flow/data/edges.csv'
+        junctionspath= '/home/lab204/Desktop/marco/maslab/flow/data/junctions.csv'
+    elif host == 'home':
+        parentdir='/home/macsilva/Desktop/maslab/flow/data'
+        costspath= '/home/macsilva/Desktop/maslab/flow/flow/inputs/networks/costs.txt'
+        edgespath= '/home/macsilva/Desktop/maslab/flow/data/edges.csv'
+        junctionspath= '/home/macsilva/Desktop/maslab/flow/data/junctions.csv'
+    else:
+        quit('error -- run -- invalid host')
+    emission_path = create_dir(individual_id, individual_subfolder, exp_tag, parentdir=parentdir)
+    sim_params = SumoParams(sim_step=sim_step, emission_path=emission_path, render=False)
     initial_config = InitialConfig(bunching=bunching, spacing="custom")
     additional_env_params ={
         'individual_id' :   individual_id,
         'emission_path' :   emission_path,
         'weight_path'   :   weight_path,
+        'costs_path'    :   costspath,
+        'edges_path'    :   edgespath,
+        'junctions_path':   junctionspath,
     }
     env_params=EnvParams(
             horizon=horizon,
@@ -55,7 +70,7 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
     return get_vehicle_value(emission_path)
 
 
-def create_dir(individual, subfolder, exp_tag, parentdir='/home/macsilva/Desktop/maslab/flow/data'):
+def create_dir(individual, subfolder, exp_tag, parentdir='/home/lab204/Desktop/marco/maslab/flow/data'):
     # '/home/macsilva/Desktop/maslab/flow/data/<exp_tag>'
     path = os.path.join(parentdir, exp_tag)
     if not exp_tag in os.listdir(parentdir):

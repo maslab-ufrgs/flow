@@ -38,10 +38,10 @@ __all__ = [
     'BottleneckDesiredVelocityEnv',
     'TestEnv',
     'BayBridgeEnv',
+    'myEnvironment',
     # deprecated classes
     'BottleNeckAccelEnv',
     'DesiredVelocityEnv',
     'PO_TrafficLightGridEnv',
     'GreenWaveTestEnv',
-    'myEnvironment'
 ]
