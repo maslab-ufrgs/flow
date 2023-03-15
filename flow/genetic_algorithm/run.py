@@ -19,13 +19,13 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
     if host == 'lab':
         parentdir= '/home/lab204/Desktop/marco/maslab/flow/data'
         costspath= '/home/lab204/Desktop/marco/maslab/flow/flow/inputs/networks/costs.txt'
-        edgespath= '/home/lab204/Desktop/marco/maslab/flow/data/edges.csv'
-        junctionspath= '/home/lab204/Desktop/marco/maslab/flow/data/junctions.csv'
+        edgespath= '/home/lab204/Desktop/marco/maslab/flow/data/{}/edges.csv'.format(exp_tag)
+        junctionspath= '/home/lab204/Desktop/marco/maslab/flow/data/{}/junctions.csv'.format(exp_tag)
     elif host == 'home':
-        parentdir='/home/macsilva/Desktop/maslab/flow/data'
+        parentdir= '/home/macsilva/Desktop/maslab/flow/data'
         costspath= '/home/macsilva/Desktop/maslab/flow/flow/inputs/networks/costs.txt'
-        edgespath= '/home/macsilva/Desktop/maslab/flow/data/edges.csv'
-        junctionspath= '/home/macsilva/Desktop/maslab/flow/data/junctions.csv'
+        edgespath= '/home/macsilva/Desktop/maslab/flow/data/{}/edges.csv'.format(exp_tag)
+        junctionspath= '/home/macsilva/Desktop/maslab/flow/data/{}/junctions.csv'.format(exp_tag)
     else:
         quit('error -- run -- invalid host')
     emission_path = create_dir(individual_id, individual_subfolder, exp_tag, parentdir=parentdir)

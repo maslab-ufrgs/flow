@@ -108,14 +108,14 @@ def ga(num_vehicles, pop_size, num_runs, exp_tag,tournament_size=0, ga_execution
         tsize = tournament_size
     else:
         tsize = ceil(0.1*pop_size) 
-    p = population(num_vehicles, pop_size)
+    p = population(num_vehicles, pop_size, host)
     num_individuals = deepcopy(pop_size)
     for exec in range(ga_executions):
         _p = []  
         while len(_p) < len(p):
             mother = tournament(p, tsize, exp_tag, num_runs, host)
             father = tournament(p, tsize, exp_tag, num_runs, host)
-            ind1, ind2, num_individuals = crossover(mother, father, num_vehicles, num_individuals)
+            ind1, ind2, num_individuals = crossover(mother, father, num_vehicles, num_individuals, host)
             ind1.mutation()
             ind2.mutation()
             _p.append(ind1)
@@ -123,7 +123,7 @@ def ga(num_vehicles, pop_size, num_runs, exp_tag,tournament_size=0, ga_execution
         selection(p, _p, pop_size, exp_tag, num_runs, host)
     return p[0] # best
 
-def population(num_vehicles, pop_size):
+def population(num_vehicles, pop_size, host):
     p = []
     for i in range(pop_size):
         timews = []
@@ -133,7 +133,7 @@ def population(num_vehicles, pop_size):
             tollw = 1 - timew
             timews.append(timew)
             tollws.append(tollw)
-        p.append(Individual(i, timews, tollws))
+        p.append(Individual(i, timews, tollws, host))
     return p
 
 
@@ -147,7 +147,7 @@ def tournament(population, size, exp_tag, num_runs, host):
             best = deepcopy(population[index])
     return best
 
-def crossover(mother:Individual, father:Individual, num_vehicles:int, num_individuals:int):
+def crossover(mother:Individual, father:Individual, num_vehicles:int, num_individuals:int, host:str):
     i = random.randint(0, num_vehicles-2)
     j = random.randint(i+1, num_vehicles-1)
     mother_timews = deepcopy(mother.get_time_weights(i, j))
@@ -160,19 +160,22 @@ def crossover(mother:Individual, father:Individual, num_vehicles:int, num_indivi
     i1 = Individual(
         id=deepcopy(num_individuals), 
         time_weights=i1_timews,
-        toll_weights=i1_tollws)
+        toll_weights=i1_tollws,
+        host=host)
     num_individuals += 1 
     print(i1)
     i2 = Individual(
         id=deepcopy(num_individuals), 
         time_weights=i2_timews,
-        toll_weights=i2_tollws)
+        toll_weights=i2_tollws,
+        host=host)
     print(i2)
     return i1, i2, num_individuals
 
 def selection(p, _p, pop_size, exp_tag, num_runs, host):
-    pop = sorted([ind for ind in p + _p], key=lambda ind: ind.get_value(exp_tag, num_runs, host))
-    p = deepcopy(pop[0:pop_size])
+    best = max([ind for ind in p + _p], key=lambda ind: ind.get_value(exp_tag, num_runs, host))
+    p = random.sample([ind for ind in p + _p], pop_size - 1)
+    p.append(best)
     assert len(p) == pop_size
     _p = []
 

@@ -225,7 +225,7 @@ class DataBase():
 class myEnvironment(Env):
     def __init__(self, env_params, sim_params, network=None, simulator='traci', scenario=None):
         self.database = DataBase()
-        self.execution = FIRST_EXECUTION      
+        self.execution = FIRST_EXECUTION    
         super().__init__(env_params, sim_params, network, simulator, scenario)
         self.freeflow = {}
         self.costs = {}
