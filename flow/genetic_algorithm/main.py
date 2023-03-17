@@ -193,4 +193,7 @@ ga_executions = int(sys.argv[6].split('=')[1])
 assert sys.argv[6].split('=')[0] == '--ga_executions'
 host = sys.argv[7].split('=')[1]
 assert sys.argv[7].split('=')[0] == '--host'
-print(ga(num_vehicles, pop_size, num_runs, exp_tag, tournament_size, ga_executions, host))
+best = ga(num_vehicles, pop_size, num_runs, exp_tag, tournament_size, ga_executions, host)
+print(best)
+with open('/home/macsilva/Desktop/maslab/flow/data/{}/best.txt'.format(exp_tag), 'w') as file:
+    file.write(str(best))
