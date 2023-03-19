@@ -195,5 +195,11 @@ host = sys.argv[7].split('=')[1]
 assert sys.argv[7].split('=')[0] == '--host'
 best = ga(num_vehicles, pop_size, num_runs, exp_tag, tournament_size, ga_executions, host)
 print(best)
-with open('/home/macsilva/Desktop/maslab/flow/data/{}/best.txt'.format(exp_tag), 'w') as file:
+if host == 'home':
+    bestpath = '/home/macsilva/Desktop/maslab/flow/data/{}/best.txt'.format(exp_tag)
+elif host == 'lab':
+    bestpath = '/home/lab204/Desktop/marco/maslab/flow/data/{}/best.txt'.format(exp_tag)
+else:
+    quit('No host found')
+with open(bestpath, 'w') as file:
     file.write(str(best))
