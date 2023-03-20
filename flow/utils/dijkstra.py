@@ -1,5 +1,6 @@
 from flow.networks.MyGrid import *
 import math
+import heapq
 
 def neighbors(source, edges):
     '''
@@ -49,6 +50,7 @@ def make_graph(edges):
             nodes_list.append(node_from)
     return nodes_list
 
+
 def dijkstra(source, env, veh_id, nodes_not_to_be_considered = []):
     # recover edges from environment
     edges_dict = env.k.network._edges
@@ -58,6 +60,8 @@ def dijkstra(source, env, veh_id, nodes_not_to_be_considered = []):
             edges.append(key)
     # recover nodes from edges
     nodes = make_graph(edges)
+    print(nodes)
+    print(nodes_not_to_be_considered)
     for n in nodes_not_to_be_considered:
         nodes.remove(n)
     distance = {}
@@ -67,18 +71,22 @@ def dijkstra(source, env, veh_id, nodes_not_to_be_considered = []):
         distance[n] = math.inf
         previous[n] = undefined
     distance[source] = 0
-    nodes_queue = deepcopy(nodes)
-    while len(nodes_queue) > 0:
-        nodes_queue = sorted(nodes_queue, key= lambda node: distance[node])
-        lowest_cost_node = nodes_queue[0]
-        nodes_queue.remove(lowest_cost_node)
-        for neighbor in neighbors(lowest_cost_node, edges):
-            if neighbor in nodes_queue:
-                alt = distance[lowest_cost_node] + edge_cost(lowest_cost_node, neighbor, env, veh_id)
+    q = [(source, 0, undefined)]
+    while q:
+        node, dist, prev = heapq.heappop(q)
+        if dist > distance[node] or node in nodes_not_to_be_considered:
+            continue
+        previous[node] = prev
+
+        for neighbor in neighbors(node, edges):
+            if neighbor not in nodes_not_to_be_considered:
+                alt = distance[node] + edge_cost(node, neighbor, env, veh_id)
                 if alt < distance[neighbor]:
                     distance[neighbor] = alt
-                    previous[neighbor] = lowest_cost_node
+                    heapq.heappush(q,(neighbor, alt, node))
+
     return previous, distance
+
 
 def make_path_from_dijkstra(dict_previous, destiny):
     dst = deepcopy(destiny)
