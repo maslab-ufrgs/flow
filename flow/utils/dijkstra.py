@@ -60,8 +60,6 @@ def dijkstra(source, env, veh_id, nodes_not_to_be_considered = []):
             edges.append(key)
     # recover nodes from edges
     nodes = make_graph(edges)
-    print(nodes)
-    print(nodes_not_to_be_considered)
     for n in nodes_not_to_be_considered:
         nodes.remove(n)
     distance = {}

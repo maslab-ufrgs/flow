@@ -4,6 +4,7 @@ import random
 import subprocess
 import sys
 import pandas as pd
+from flow.genetic_algorithm.parser import parse_args
 from run import *
 
 
@@ -103,14 +104,14 @@ class Individual:
             self.subfolder += 1
             return self.value
 
-def ga(num_vehicles, pop_size, num_runs, exp_tag,tournament_size=0, ga_executions=1, host='lab'):
+def ga(num_vehicles, pop_size, num_runs, exp_tag,tournament_size=0, num_generations=1, host='lab'):
     if  0 < tournament_size <= pop_size:
         tsize = tournament_size
     else:
         tsize = ceil(0.1*pop_size) 
     p = population(num_vehicles, pop_size, host)
     num_individuals = deepcopy(pop_size)
-    for exec in range(ga_executions):
+    for exec in range(num_generations):
         _p = []  
         while len(_p) < len(p):
             mother = tournament(p, tsize, exp_tag, num_runs, host)
@@ -179,26 +180,22 @@ def selection(p, _p, pop_size, exp_tag, num_runs, host):
     assert len(p) == pop_size
     _p = []
 
-num_vehicles = int(sys.argv[1].split('=')[1])
-assert sys.argv[1].split('=')[0] == '--num_vehicles'
-pop_size = int(sys.argv[2].split('=')[1])
-assert sys.argv[2].split('=')[0] == '--pop_size'
-num_runs = int(sys.argv[3].split('=')[1])
-assert sys.argv[3].split('=')[0] == '--num_runs'
-exp_tag = sys.argv[4].split('=')[1]
-assert sys.argv[4].split('=')[0] == '--exp_tag'
-tournament_size = int(sys.argv[5].split('=')[1])
-assert sys.argv[5].split('=')[0] == '--tournament_size'
-ga_executions = int(sys.argv[6].split('=')[1])
-assert sys.argv[6].split('=')[0] == '--ga_executions'
-host = sys.argv[7].split('=')[1]
-assert sys.argv[7].split('=')[0] == '--host'
-best = ga(num_vehicles, pop_size, num_runs, exp_tag, tournament_size, ga_executions, host)
+
+args = parse_args(sys.argv[1:])
+best = ga(
+    args.num_vehicles, 
+    args.pop_size, 
+    args.num_runs, 
+    args.exp_tag, 
+    args.tournament_size, 
+    args.num_generations, 
+    args.host
+    )
 print(best)
-if host == 'home':
-    bestpath = '/home/macsilva/Desktop/maslab/flow/data/{}/best.txt'.format(exp_tag)
-elif host == 'lab':
-    bestpath = '/home/lab204/Desktop/marco/maslab/flow/data/{}/best.txt'.format(exp_tag)
+if args.host == 'home':
+    bestpath = '/home/macsilva/Desktop/maslab/flow/data/{}/best.txt'.format(args.exp_tag)
+elif args.host == 'lab':
+    bestpath = '/home/lab204/Desktop/marco/maslab/flow/data/{}/best.txt'.format(args.exp_tag)
 else:
     quit('No host found')
 with open(bestpath, 'w') as file:
