@@ -59,8 +59,7 @@ class Vehicle():
         if edge in self.experience:
             self.experience[edge] = 0.9*self.experience[edge] + 0.1*time
         else:
-            print('ERROR -- UPDATE EXPERIENCE -- NO PREVIOUS EDGE TO UPDATE')
-            quit()
+            quit('ERROR -- UPDATE EXPERIENCE -- NO PREVIOUS EDGE TO UPDATE')
         print('after -- id:{}, time:{}'.format(self.id, self.experience[edge]))
 
     def from_str(self):

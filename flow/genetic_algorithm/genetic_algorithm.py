@@ -195,7 +195,7 @@ print(best)
 if args.host == 'home':
     bestpath = '/home/macsilva/Desktop/maslab/flow/data/{}/best.txt'.format(args.exp_tag)
 elif args.host == 'lab':
-    bestpath = '/home/lab204/Desktop/marco/maslab/flow/data/{}/best.txt'.format(args.exp_tag)
+    bestpath = '/Desktop/marco/maslab/flow/data/{}/best.txt'.format(args.exp_tag)
 else:
     quit('No host found')
 with open(bestpath, 'w') as file:
