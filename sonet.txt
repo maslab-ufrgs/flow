@@ -1,0 +1,133 @@
+#function name (args) formula
+function BPR (f) t * (1 + 0.15 * (f / c) ^ 4)
+#node name
+node 00
+node 01
+node 10
+node 02
+node 11
+node 03
+node 12
+node 04
+node 13
+node 14
+node 20
+node 21
+node 22
+node 23
+node 24
+node 30
+node 31
+node 32
+node 33
+node 34
+node 40
+node 41
+node 42
+node 43
+node 44
+#dedge name origin destination function constants
+dedge 00-01 00 01 BPR 10 20
+dedge 00-10 00 10 BPR 10 20
+dedge 01-00 01 00 BPR 10 20
+dedge 01-02 01 02 BPR 10 20
+dedge 01-11 01 11 BPR 10 20
+dedge 02-01 02 01 BPR 10 20
+dedge 02-03 02 03 BPR 10 20
+dedge 02-12 02 12 BPR 10 20
+dedge 03-02 03 02 BPR 10 20
+dedge 03-04 03 04 BPR 10 20
+dedge 03-13 03 13 BPR 10 20
+dedge 04-03 04 03 BPR 10 20
+dedge 04-14 04 14 BPR 10 20
+dedge 10-00 10 00 BPR 10 20
+dedge 10-11 10 11 BPR 10 20
+dedge 10-20 10 20 BPR 10 20
+dedge 11-01 11 01 BPR 10 20
+dedge 11-10 11 10 BPR 10 20
+dedge 11-12 11 12 BPR 10 20
+dedge 11-21 11 21 BPR 10 20
+dedge 12-02 12 02 BPR 10 20
+dedge 12-11 12 11 BPR 10 20
+dedge 12-13 12 13 BPR 10 20
+dedge 12-22 12 22 BPR 10 20
+dedge 13-03 13 03 BPR 10 20
+dedge 13-12 13 12 BPR 10 20
+dedge 13-14 13 14 BPR 10 20
+dedge 13-23 13 23 BPR 10 20
+dedge 14-04 14 04 BPR 10 20
+dedge 14-13 14 13 BPR 10 20
+dedge 14-24 14 24 BPR 10 20
+dedge 20-10 20 10 BPR 10 20
+dedge 20-21 20 21 BPR 10 20
+dedge 20-30 20 30 BPR 10 20
+dedge 21-11 21 11 BPR 10 20
+dedge 21-20 21 20 BPR 10 20
+dedge 21-22 21 22 BPR 10 20
+dedge 21-31 21 31 BPR 10 20
+dedge 22-12 22 12 BPR 10 20
+dedge 22-21 22 21 BPR 10 20
+dedge 22-23 22 23 BPR 10 20
+dedge 22-32 22 32 BPR 10 20
+dedge 23-13 23 13 BPR 10 20
+dedge 23-22 23 22 BPR 10 20
+dedge 23-24 23 24 BPR 10 20
+dedge 23-33 23 33 BPR 10 20
+dedge 24-14 24 14 BPR 10 20
+dedge 24-23 24 23 BPR 10 20
+dedge 24-34 24 34 BPR 10 20
+dedge 30-20 30 20 BPR 10 20
+dedge 30-31 30 31 BPR 10 20
+dedge 30-40 30 40 BPR 10 20
+dedge 31-21 31 21 BPR 10 20
+dedge 31-30 31 30 BPR 10 20
+dedge 31-32 31 32 BPR 10 20
+dedge 31-41 31 41 BPR 10 20
+dedge 32-22 32 22 BPR 10 20
+dedge 32-31 32 31 BPR 10 20
+dedge 32-33 32 33 BPR 10 20
+dedge 32-42 32 42 BPR 10 20
+dedge 33-23 33 23 BPR 10 20
+dedge 33-32 33 32 BPR 10 20
+dedge 33-34 33 34 BPR 10 20
+dedge 33-43 33 43 BPR 10 20
+dedge 34-24 34 24 BPR 10 20
+dedge 34-33 34 33 BPR 10 20
+dedge 34-44 34 44 BPR 10 20
+dedge 40-30 40 30 BPR 10 20
+dedge 40-41 40 41 BPR 10 20
+dedge 41-31 41 31 BPR 10 20
+dedge 41-40 41 40 BPR 10 20
+dedge 41-42 41 42 BPR 10 20
+dedge 42-32 42 32 BPR 10 20
+dedge 42-41 42 41 BPR 10 20
+dedge 42-43 42 43 BPR 10 20
+dedge 43-33 43 33 BPR 10 20
+dedge 43-42 43 42 BPR 10 20
+dedge 43-44 43 44 BPR 10 20
+dedge 44-34 44 34 BPR 10 20
+dedge 44-43 44 43 BPR 10 20
+#od name origin destination flow
+od 33|40 33 40 3
+od 12|40 12 40 10
+od 44|40 44 40 14
+od 24|40 24 40 6
+od 30|40 30 40 5
+od 02|40 02 40 6
+od 43|40 43 40 4
+od 10|40 10 40 5
+od 00|40 00 40 9
+od 03|40 03 40 6
+od 11|40 11 40 7
+od 34|40 34 40 12
+od 04|40 04 40 9
+od 20|40 20 40 4
+od 32|40 32 40 8
+od 22|40 22 40 6
+od 31|40 31 40 7
+od 13|40 13 40 4
+od 01|40 01 40 8
+od 14|40 14 40 7
+od 21|40 21 40 6
+od 23|40 23 40 1
+od 41|40 41 40 3
