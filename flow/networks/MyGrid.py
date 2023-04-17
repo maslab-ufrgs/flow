@@ -19,6 +19,7 @@ CASE1_POSSIBLE_CHOICES = [0,1]
 CASE1_PROBABILITY_DISTRIBUTION = [1/3, 2/3]
 
 # number of_nodes
+# TODO: alterar código para passar valores V e H como parâmetros.
 NUMBER_OF_VERTICAL_NODES = 5
 NUMBER_OF_HORIZONTAL_NODES = 5
 
@@ -62,7 +63,9 @@ class InputFileVehicleData:
             self.time_weight,
             self.toll_weight
         )
-
+    
+    def get_src_and_dst(self):
+        return self.starting_node, self.termination_node
 
     def weight(self, time, toll):
         self.time_weight = time
@@ -228,6 +231,7 @@ class MyGrid(Network):
 
         for orientation in EdgesOrientation:
             edges.extend(self.generate_edges(orientation, speed_limit, edge_length, num_lanes))
+
         return edges
 
     # check
@@ -616,6 +620,7 @@ def gen_custom_start_pos_using_input_file_data(net_params, num_vehicles, start_l
         raise
 
 def gen_custom_start_pos_using_network_data( net_params, num_vehicles, start_lanes, start_positions):
+    print('##########################################')
     num_lanes = net_params.additional_params["num_lanes"]
     lane_length = net_params.additional_params["lane_length"]
     dst_x = np.random.choice(NUMBER_OF_HORIZONTAL_NODES, size=1)[0]
@@ -797,5 +802,3 @@ def read_weight_input(net_params):
     df = pd.read_csv(weight_path)
     for index, row in df.iterrows():
         network_vehicles_data[row['veh_id']].weight(row['time_weight'], row['toll_weight'])
-        
-            

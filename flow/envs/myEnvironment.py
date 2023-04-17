@@ -3,6 +3,7 @@ from flow.envs import Env
 from flow.networks.MyGrid import *
 from gym.spaces.box import Box
 from gym.spaces import Tuple
+from flow.utils.dijkstra import *
 import numpy as np
 
 FIRST_EXECUTION = -1
@@ -231,6 +232,7 @@ class myEnvironment(Env):
         self.calculate_freeflow()
         self.calculate_costs(env_params)
         self.database.from_str(self.initial_ids, self.k.network.get_edge_list(), self.freeflow)
+        self.network_system_optimal("")
 
     @property
     def action_space(self):
@@ -342,6 +344,78 @@ class myEnvironment(Env):
         for edge in edges:
             self.freeflow[edge] = deepcopy(self.freeflow_time(edge))
 
+    def network_system_optimal(self, filepath, tau=1):
+        # tau = 1, like: https://sumo.dlr.de/docs/Simulation/RoadCapacity.html
+
+        ### obtain network data ###
+        maxSpeed = self.k.network.max_speed()
+        edges = self.k.network.get_edge_list()
+        edges_capacities_fftimes = []
+        nodes = []
+        minGap = float('inf')
+        for vehType in self.k.vehicle.minGap:
+            if self.k.vehicle.minGap[vehType] < minGap:
+                minGap = self.k.vehicle.minGap[vehType]
+
+        for edge in edges:
+            u, v = split_string_node_id(edge)
+            if u not in nodes:
+                nodes.append(u)
+            if v not in nodes:
+                nodes.append(v)
+            capacity = 20
+            fftime = int(self.freeflow_time(edge))
+            edges_capacities_fftimes.append((edge, capacity, fftime))
+
+        ### headers ###
+        function_header = "#function name (args) formula\n"
+        node_header = "#node name\n"
+        edge_header = "#dedge name origin destination function constants\n"
+        od_header = "#od name origin destination flow\n"
+
+        ### start building network file ###
+        with open("/home/macsilva/Desktop/transpnet.txt","w") as tn:
+            ### function ###
+            tn.write(function_header)
+            tn.write("function BPR (f) t * (1 + 0.15 * (f / c) ^ 4)\n")
+            
+            ### node ###
+            tn.write(node_header)
+            for n in nodes:
+                tn.write("node " + n + "\n")
+            
+            ### edge ###
+            tn.write(edge_header)
+            # ex: dedge UtoV U V BPR t0 cUV, where:
+            #   t0 = free flow time
+            #   cUV = how many vehicles does UV support
+            for uv, Cuv, FFTuv in edges_capacities_fftimes:
+                uv = uv.replace("from", "")
+                u, v = split_string_node_id(uv)
+                tn.write("dedge {} {} {} BPR {} {}\n".format(
+                    u + "-" + v,
+                    u,
+                    v,
+                    FFTuv,
+                    Cuv,
+                ))
+
+            ### od ###
+            tn.write(od_header)
+            ods = {}
+            for key in network_vehicles_data:
+                if (not key == "start_positions") and (not key == "start_lanes"):
+                    o,d = network_vehicles_data[key].get_src_and_dst()
+                    od = o + "|" + d
+                    if od not in ods:
+                        ods[od] = 1
+                    else:
+                        ods[od] = ods[od] + 1
+            for od in ods:
+                o, d = od.split("|")
+                tn.write("od {} {} {} {}\n".format(od, o, d, ods[od]))
+            quit()
+        
 def edges_to_csv(edges, edgespath):
     header = ["edge"]
     with open(edgespath, 'w') as file:
@@ -357,4 +431,4 @@ def junctions_to_csv(junctions, junctionspath):
         writer.writerow(header)
         for j in junctions:
             writer.writerow([j])
-
+                
