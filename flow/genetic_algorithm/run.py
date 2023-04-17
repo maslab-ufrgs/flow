@@ -18,14 +18,16 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
                 )
     if host == 'lab':
         parentdir= '/home/lab204/Desktop/marco/maslab/flow/data'
-        costspath= '/home/lab204/Desktop/marco/maslab/flow/flow/inputs/networks/costs.txt'
-        edgespath= '/home/lab204/Desktop/marco/maslab/flow/data/{}/edges.csv'.format(exp_tag)
-        junctionspath= '/home/lab204/Desktop/marco/maslab/flow/data/{}/junctions.csv'.format(exp_tag)
+        costs_path= '/home/lab204/Desktop/marco/maslab/flow/flow/inputs/networks/costs.txt'
+        edges_path= '/home/lab204/Desktop/marco/maslab/flow/data/{}/edges.csv'.format(exp_tag)
+        junctions_path= '/home/lab204/Desktop/marco/maslab/flow/data/{}/junctions.csv'.format(exp_tag)
+        systemoptimal_path = '/home/lab204/Desktop/marco/maslab/flow/so_net.txt'
     elif host == 'home':
         parentdir= '/home/macsilva/Desktop/maslab/flow/data'
-        costspath= '/home/macsilva/Desktop/maslab/flow/flow/inputs/networks/costs.txt'
-        edgespath= '/home/macsilva/Desktop/maslab/flow/data/{}/edges.csv'.format(exp_tag)
-        junctionspath= '/home/macsilva/Desktop/maslab/flow/data/{}/junctions.csv'.format(exp_tag)
+        costs_path= '/home/macsilva/Desktop/maslab/flow/flow/inputs/networks/costs.txt'
+        edges_path= '/home/macsilva/Desktop/maslab/flow/data/{}/edges.csv'.format(exp_tag)
+        junctions_path= '/home/macsilva/Desktop/maslab/flow/data/{}/junctions.csv'.format(exp_tag)
+        systemoptimal_path = '/home/macsilva/Desktop/maslab/flow/so_net.txt'
     else:
         quit('error -- run -- invalid host')
     emission_path = create_dir(individual_id, individual_subfolder, exp_tag, parentdir=parentdir)
@@ -35,9 +37,10 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
         'individual_id' :   individual_id,
         'emission_path' :   emission_path,
         'weight_path'   :   weight_path,
-        'costs_path'    :   costspath,
-        'edges_path'    :   edgespath,
-        'junctions_path':   junctionspath,
+        'costs_path'    :   costs_path,
+        'edges_path'    :   edges_path,
+        'junctions_path':   junctions_path,
+        'systemoptimal_path': systemoptimal_path,
     }
     env_params=EnvParams(
             horizon=horizon,

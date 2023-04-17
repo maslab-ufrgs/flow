@@ -620,7 +620,6 @@ def gen_custom_start_pos_using_input_file_data(net_params, num_vehicles, start_l
         raise
 
 def gen_custom_start_pos_using_network_data( net_params, num_vehicles, start_lanes, start_positions):
-    print('##########################################')
     num_lanes = net_params.additional_params["num_lanes"]
     lane_length = net_params.additional_params["lane_length"]
     dst_x = np.random.choice(NUMBER_OF_HORIZONTAL_NODES, size=1)[0]
