@@ -21,13 +21,13 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
         costs_path= '/home/lab204/Desktop/marco/maslab/flow/flow/inputs/networks/costs.txt'
         edges_path= '/home/lab204/Desktop/marco/maslab/flow/data/{}/edges.csv'.format(exp_tag)
         junctions_path= '/home/lab204/Desktop/marco/maslab/flow/data/{}/junctions.csv'.format(exp_tag)
-        systemoptimal_path = '/home/lab204/Desktop/marco/maslab/flow/so_net.txt'
+        systemoptimal_path = '/home/lab204/Desktop/marco/maslab/flow/data/{}/so_net.txt'.format(exp_tag)
     elif host == 'home':
         parentdir= '/home/macsilva/Desktop/maslab/flow/data'
         costs_path= '/home/macsilva/Desktop/maslab/flow/flow/inputs/networks/costs.txt'
         edges_path= '/home/macsilva/Desktop/maslab/flow/data/{}/edges.csv'.format(exp_tag)
         junctions_path= '/home/macsilva/Desktop/maslab/flow/data/{}/junctions.csv'.format(exp_tag)
-        systemoptimal_path = '/home/macsilva/Desktop/maslab/flow/so_net.txt'
+        systemoptimal_path = '/home/macsilva/Desktop/maslab/flow/data/{}/so_net.txt'.format(exp_tag)
     else:
         quit('error -- run -- invalid host')
     emission_path = create_dir(individual_id, individual_subfolder, exp_tag, parentdir=parentdir)
