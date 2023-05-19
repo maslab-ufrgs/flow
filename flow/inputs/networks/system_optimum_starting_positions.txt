@@ -1,0 +1,15 @@
+# type: node_to_node, edge_to_node, edge_to_node_list, edges_toll_cost
+edge_to_node_list
+# number of horizontal nodes (integer), number of vertical nodes (integer)
+5,5
+# starting edge (string), termination node (string)
+from00to10,44
+from00to10,44
+from00to01,44
+from11to01,44
+from11to10,44
+from11to10,44
+from10to11,44
+from11to21,44
+from21to22,44
+from21to11,44

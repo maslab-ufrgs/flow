@@ -1,0 +1,15 @@
+# type: node_to_node, edge_to_node, edge_cost, system_optimum
+edge_to_node_list
+# number of horizontal nodes (integer), number of vertical nodes (integer)
+5,5
+# starting edge (string), termination node (string)
+from13to12,32
+from44to34,32
+from30to31,32
+from22to23,32
+from12to13,32
+from12to13,32
+from42to32,32
+from24to14,32
+from12to22,32
+from01to02,32

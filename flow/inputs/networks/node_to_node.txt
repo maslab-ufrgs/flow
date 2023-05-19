@@ -1,4 +1,4 @@
-# type: node_to_node, edge_to_node,
+# type: node_to_node, edge_to_node_pd, edge_to_node_list, edges_toll_cost
 node_to_node
 # number of horizontal nodes (integer), number of vertical nodes (integer)
 3,3

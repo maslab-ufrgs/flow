@@ -98,7 +98,7 @@
                 "lane_change_mode": 512
             },
             "num_vehicles": 13,
-            "routing_controller": [
+            "": [
                 "ContinuousRouter",
                 {}
             ],
@@ -140,7 +140,7 @@
                 "lane_change_mode": 512
             },
             "num_vehicles": 1,
-            "routing_controller": [
+            "": [
                 "ContinuousRouter",
                 {}
             ],

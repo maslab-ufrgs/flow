@@ -1,6 +1,7 @@
 from email import header
 import linecache
 import csv
+import string
 import pandas as pd
 from copy import deepcopy
 from math import floor
@@ -34,11 +35,24 @@ edges_toll_cost = {}
 #   s (str) is start node
 #   t (str) is termination node
 #   p (float) is probability of selecting the (s,t) combination of nodes
-# edge_to_node: file format is e,t,p where:
+# edge_to_node_pd: file format is e,t,p where:
 #   e (str) is the first edge that will be taken by the vehicle
 #   t (str) is termination node
 #   p (float) is probability of selecting the (e,t) combination of edge and node
-InputFileType = ["node_to_node", "edge_to_node",'edges_toll_cost']
+# edge_to_node_list: file format is e,t where:
+#   e (str) is the first edge that will be taken by the vehicle
+#   t (str) is the termination node
+# obs.: is necessary to have one vehicle for each (e,t) pair
+# edges_toll_cost: file format is e,c where:
+#   e (str) is the edge
+#   c (float) is the cost associated with edge e
+# obs.: is necessary to hgave one edge for each (e,c) pair
+InputFileType = [
+    'node_to_node', 
+    'edge_to_node_pd', 
+    'edge_to_node_list',
+    'edges_toll_cost'
+]
 
 class InputFileVehicleData:
     def __init__(self, vehicle_id, selected_lane,first_edge, termination_node, starting_node=None, time_weight=None, toll_weight=None):
@@ -64,8 +78,16 @@ class InputFileVehicleData:
             self.toll_weight
         )
     
-    def get_src_and_dst(self):
-        return self.starting_node, self.termination_node
+    def get_first_edge(self):
+        if type(self.first_edge) is tuple:
+            return self.first_edge[0]
+        elif type(self.first_edge) is str:
+            return self.first_edge
+        else:
+            raise
+
+    def get_termination_node(self):
+        return self.termination_node
 
     def weight(self, time, toll):
         self.time_weight = time
@@ -237,16 +259,12 @@ class MyGrid(Network):
     # check
     def specify_routes(self, net_params):
         rts = {}
-
-        # destiny = (NUMBER_OF_HORIZONTAL_NODES-1, NUMBER_OF_VERTICAL_NODES-1)
-        # random_routes = generating_random_routes(destiny)
-        # rts.update(random_routes)
-
         lane_length =  net_params.additional_params["lane_length"]
         for orientation in EdgesOrientation: 
             rts.update(self.generate_routes(orientation, lane_length))
         return rts
     
+
     # ok
     def generate_routes(self, orientation, lane_length):
         y_range = NUMBER_OF_VERTICAL_NODES
@@ -600,10 +618,13 @@ def store_line_content_from_input_file_data(data, probability_distribution, line
     if file_type == "node_to_node":
         s, t, p = splited_line[0], splited_line[1], float(splited_line[2])
         probability_distribution.append(p)
-        data.append((s,t))
-    elif file_type == "edge_to_node":
+        data.append((s, t))
+    elif file_type == "edge_to_node_pd":
         e, t, p = splited_line[0], splited_line[1], float(splited_line[2])
         probability_distribution.append(p)
+        data.append((e, t))
+    elif file_type == "edge_to_node_list":
+        e, t = splited_line[0], splited_line[1].replace('\n', '')
         data.append((e, t))
     else:
         raise
@@ -614,10 +635,13 @@ def gen_custom_start_pos_using_input_file_data(net_params, num_vehicles, start_l
     file_type = read_source_node_to_termination_node_input_file(file_path, data, probability_distribution)
     if file_type == "node_to_node":
         gen_custom_start_pos_using_input_file_data_in_node_to_node_format(net_params, num_vehicles, start_lanes, start_positions, data, probability_distribution)
-    elif file_type == "edge_to_node":
-        gen_custom_start_pos_using_input_file_data_in_edge_to_node_format(net_params, num_vehicles, start_lanes, start_positions, data, probability_distribution)
+    elif file_type == "edge_to_node_pd":
+        gen_custom_start_pos_using_input_file_data_in_edge_to_node_pd_format(net_params, num_vehicles, start_lanes, start_positions, data, probability_distribution)
+    elif file_type == "edge_to_node_list":
+        gen_custom_start_pos_using_input_file_data_in_edge_to_node_list_format(net_params, num_vehicles, start_lanes, start_positions, data)
     else:
         raise
+
 
 def gen_custom_start_pos_using_network_data( net_params, num_vehicles, start_lanes, start_positions):
     num_lanes = net_params.additional_params["num_lanes"]
@@ -666,7 +690,7 @@ def gen_custom_start_pos_using_network_data( net_params, num_vehicles, start_lan
     read_weight_input(net_params)
 
 
-def gen_custom_start_pos_using_input_file_data_in_edge_to_node_format(net_params, num_vehicles, start_lanes, start_positions, edges, probability_distribution):
+def gen_custom_start_pos_using_input_file_data_in_edge_to_node_pd_format(net_params, num_vehicles, start_lanes, start_positions, edges, probability_distribution):
     num_lanes = net_params.additional_params["num_lanes"]
     lane_length = net_params.additional_params["lane_length"]
     for veh in range(num_vehicles):
@@ -690,6 +714,26 @@ def gen_custom_start_pos_using_input_file_data_in_edge_to_node_format(net_params
     network_vehicles_data["start_positions"] = start_positions
     network_vehicles_data["start_lanes"] = start_lanes
     read_weight_input(net_params)
+
+
+def gen_custom_start_pos_using_input_file_data_in_edge_to_node_list_format(net_params, num_vehicles, start_lanes, start_positions, data):
+    num_lanes = net_params.additional_params["num_lanes"]
+    lane_length = net_params.additional_params["lane_length"]
+    veh = 0
+    for edge, dst in data:
+        lane = np.random.choice(num_lanes, size=1)[0]
+        start_lanes.append(lane)
+        edge_pos = find_a_position_to_insert_new_vehicle_into_the_selected_edge(edge, start_positions, lane_length)
+        if edge_pos is None:
+            raise
+        start_positions.append((edge, edge_pos))
+        veh_id = 'human_' + str(veh)
+        network_vehicles_data[veh_id] = InputFileVehicleData(veh_id, lane, edge, dst, time_weight=0.5, toll_weight=0.5)
+        veh += 1
+    if not veh == num_vehicles:
+        raise
+    network_vehicles_data["start_positions"] = start_positions
+    network_vehicles_data["start_lanes"] = start_lanes
 
 def gen_custom_start_pos_using_input_file_data_in_node_to_node_format(net_params, num_vehicles, start_lanes, start_positions, nodes, probability_distribution):
     num_lanes = net_params.additional_params["num_lanes"]
