@@ -17,26 +17,27 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
     vehicles.add(
                 veh_id="human",
                 acceleration_controller=(IDMController, {}),
-                # routing_controller=(MyGridRouterOnlyWhenVehiclesAreReseting, {}),
-                routing_controller=(MyGridRouterUsingPredefinedRoutes, {}),
+                routing_controller=(MyGridRouterOnlyWhenVehiclesAreReseting, {}),
+                # routing_controller=(MyGridRouterUsingPredefinedRoutes, {}),
                 num_vehicles=num_vehicles,
                 )
     if host == 'lab':
         parentdir= '/home/lab204/Desktop/marco/maslab/flow/data'
-        costs_path= '/home/lab204/Desktop/marco/maslab/flow/flow/inputs/networks/costs.txt'
+        costs_path= '/home/lab204/Desktop/marco/maslab/flow/flow/inputs/costs/costs.txt'
         edges_path= '/home/lab204/Desktop/marco/maslab/flow/data/{}/edges.csv'.format(exp_tag)
         junctions_path= '/home/lab204/Desktop/marco/maslab/flow/data/{}/junctions.csv'.format(exp_tag)
         sonet_path = '/home/lab204/Desktop/marco/maslab/flow/data/{}/system_optimum/so_net.txt'.format(exp_tag)
     elif host == 'home':
         parentdir= '/home/macsilva/Desktop/maslab/flow/data'
-        costs_path= '/home/macsilva/Desktop/maslab/flow/flow/inputs/networks/costs.txt'
+        costs_path= '/home/macsilva/Desktop/maslab/flow/flow/inputs/costs/costs.txt'
         edges_path= '/home/macsilva/Desktop/maslab/flow/data/{}/edges.csv'.format(exp_tag)
         junctions_path= '/home/macsilva/Desktop/maslab/flow/data/{}/junctions.csv'.format(exp_tag)
         sonet_path = '/home/macsilva/Desktop/maslab/flow/data/{}/system_optimum/so_net.txt'.format(exp_tag)
     else:
         quit('error -- run -- invalid host')
     emission_path = create_dir(individual_id, individual_subfolder, exp_tag, parentdir=parentdir)
-    sim_params = SumoParams(sim_step=sim_step, emission_path=emission_path, render=False)
+    # sim_params = SumoParams(sim_step=sim_step, emission_path=emission_path, render=False)
+    sim_params = SumoParams(sim_step=sim_step, emission_path=emission_path, render=True)
     initial_config = InitialConfig(bunching=bunching, spacing="custom")
     additional_env_params ={
         'individual_id'     :   individual_id,
@@ -56,7 +57,7 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
         "speed_limit":  SPEED_LIMIT,
         "lane_length":  LANE_LENGTH,
         "use_input_file_to_get_starting_positions": True,
-        "input_file_path": "../../flow/inputs/networks/ga5by5.txt",
+        "input_file_path": "../../flow/inputs/networks/newGrid5by5.txt",
         "weight_path":weight_path,
     }
     net_params = NetParams(additional_params=additional_net_params)

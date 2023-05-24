@@ -1,11 +1,7 @@
-from email import header
-import linecache
-import csv
-import string
+
 import pandas as pd
 from copy import deepcopy
-from math import floor
-from turtle import position
+from math import *
 from flow.networks import Network
 from enum import Enum, auto
 import numpy as np
@@ -129,13 +125,12 @@ class MyGrid(Network):
                  net_params,
                  initial_config=InitialConfig(),
                  traffic_lights=TrafficLightParams()):
-        """Initialize a ring scenario."""
+
         for p in ADDITIONAL_NET_PARAMS.keys():
             if p not in net_params.additional_params:
                 raise KeyError('Network parameter "{}" not supplied'.format(p))
 
-        super().__init__(name, vehicles, net_params, initial_config,
-                         traffic_lights)
+        super().__init__(name, vehicles, net_params, initial_config, traffic_lights)
     rts_weights = {}
 
     @staticmethod
@@ -231,10 +226,10 @@ class MyGrid(Network):
         x_range =   NUMBER_OF_HORIZONTAL_NODES
         length = net_params.additional_params["lane_length"]
         nodes = []
-        new_nodes = []
+        # new_nodes = []
         for y in range(y_range):
             for x in range(x_range):
-                new_nodes.append(node_id(x, y))
+                # new_nodes.append(node_id(x, y))
                 new_node = {
                     "id":   node_id(x,y),
                     "x":    x*length,
@@ -242,6 +237,18 @@ class MyGrid(Network):
                 }
                 nodes.append(new_node)
 
+        ## -- update grid -- ##
+        artificial_nodes = []
+        for node in nodes:
+            artificial_nodes.append({
+                "id": "Articiial" + node["id"],
+                "x":    node["x"] + (length*0.8),
+                "y":    node["y"] + (length*0.6), 
+            })
+        nodes += artificial_nodes
+        print('nodes:')
+        print(nodes)
+        ## -- update grid -- ##
         return nodes
 
     # check
@@ -254,6 +261,34 @@ class MyGrid(Network):
         for orientation in EdgesOrientation:
             edges.extend(self.generate_edges(orientation, speed_limit, edge_length, num_lanes))
 
+        ## -- update grid -- ##
+        multlanes = 2
+        for v in range(NUMBER_OF_VERTICAL_NODES):
+            for h in range(NUMBER_OF_HORIZONTAL_NODES):
+                node = str(v) + str(h)
+                # -- describing edge format -- #
+                x = (edge_length * h)
+                dx = (0.8*edge_length)
+                y = (edge_length * v)
+                iterations = 10000
+                lastpoint = (x, y)
+                shape = [(x + dx*p/iterations, y + (3/4)*(dx*p/iterations)) for p in reversed(range(iterations))]
+                shape.append(lastpoint)
+                # -- describing edge format -- #
+                edges.append(
+                    {
+                        "id": "fromArticiial{}to{}".format(node, node),
+                        "numLanes": multlanes * num_lanes, 
+                        "speed": speed_limit,
+                        "from": "Articiial{}".format(node), 
+                        "to": "{}".format(node), 
+                        "length": edge_length,
+                        "shape": shape,                 
+                    }
+                )
+        print('edges')
+        print(edges)
+        ## -- update grid -- ##
         return edges
 
     # check
@@ -262,6 +297,16 @@ class MyGrid(Network):
         lane_length =  net_params.additional_params["lane_length"]
         for orientation in EdgesOrientation: 
             rts.update(self.generate_routes(orientation, lane_length))
+
+        ## -- update grid -- ##
+        for v in range(NUMBER_OF_VERTICAL_NODES):
+            for h in range(NUMBER_OF_HORIZONTAL_NODES):
+                node = str(v) + str(h)
+                edge = "fromArticiial{}to{}".format(node, node)
+                rts[edge] = [edge]
+        print('routes')
+        print(rts)
+        ## -- update grid -- ##
         return rts
     
 
@@ -316,7 +361,16 @@ class MyGrid(Network):
 
         for orientation in EdgesOrientation:
             edgestarts.extend(self.generate_edgestarts(orientation, lane_length))
-
+        
+        ## -- update grid -- ##
+        for v in range(NUMBER_OF_VERTICAL_NODES):
+            for h in range(NUMBER_OF_HORIZONTAL_NODES):
+                node = str(v) + str(h)
+                edge = "fromArticiial{}to{}".format(node, node)
+                edgestarts.append((edge, (lane_length*v) + int(lane_length*0.6) ))
+        print('edge starts:')
+        print(edgestarts)
+        ## -- update grid -- ##
         return edgestarts
 
     # ok

@@ -1,4 +1,5 @@
 # import the base environment class
+import csv
 import os
 import sys
 from flow.envs import Env
@@ -189,8 +190,6 @@ class DataBase():
     
     def to_csv(self, emission_path='/home/macsilva/Desktop/maslab/flow/data/vehicles.csv'):
         veh_header = ['veh_id','run','edge','time','cost','destiny','timew','tollw']
-        # self.print()
-        # quit()
         with open(emission_path, 'w') as file:
             writer = csv.writer(file)
             writer.writerow(veh_header)
@@ -238,16 +237,10 @@ class DataBase():
         self.vehicles[veh_id].set_free_flow_time(edge, free_flow)
 
     def update_route(self, veh_id, edge_id, timespent, costspent=0):
-        print('-- update route --')
         route_segment = [rs for rs in self.route_segments[-1] if rs.equal(veh_id, edge_id)]
-        print('route segments:')
-        for rs in self.route_segments[-1]:
-            print(rs)
         if route_segment:
-            print('update route segment: {}'.format(route_segment))
             route_segment[0].update(timespent, costspent)
         else:
-            print('create route segment: {}'.format(route_segment))
             self.add_route_segment(deepcopy(RouteSegment(veh_id, edge_id, timespent, costspent)))
 
     def terminate(self, emission_path=None):
@@ -375,7 +368,7 @@ class myEnvironment(Env):
             for edge in edges:
                 self.costs[edge] = deepcopy(get_cost_from_input_file(edge))
             for junction in junctions:
-                self.costs[junction] = deepcopy(junctions_cost)
+                self.costs[junction] = junctions_cost
         else:
             quit()
 
