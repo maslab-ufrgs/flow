@@ -1,0 +1,1 @@
+# build run scrip to easily run the genetic algorithm

@@ -20,7 +20,11 @@ CASE1_PROBABILITY_DISTRIBUTION = [1/3, 2/3]
 NUMBER_OF_VERTICAL_NODES = 5
 NUMBER_OF_HORIZONTAL_NODES = 5
 
-# (start, end) points for each vehicle
+# dict of ... 
+#   dict[vehicle_id:str] = vehicle:InputFileVehicleData whose id is equal to vehicle_id
+#   dict["start_positions":str] = start_positions:list<tuple>
+#   dict["start_lanes":str] = start_lanes:list<int>
+#   dict[individual_id:str] = True:bool (if individual weights were stored into vehicles data)
 network_vehicles_data = {}
 
 # edges_costs[edge:str] = edge_cost:float
@@ -51,13 +55,17 @@ InputFileType = [
 ]
 
 class InputFileVehicleData:
-    def __init__(self, vehicle_id, selected_lane,first_edge, termination_node, starting_node=None, time_weight=None, toll_weight=None):
+    def __init__(self, vehicle_id, selected_lane,first_edge, termination_node, starting_node=None, time_weight=None, toll_weight=None, individual_id=None):
         self.vehicle_id = vehicle_id
         self.selected_lane = selected_lane
         self.first_edge = first_edge
         self.termination_node = termination_node
-        self.time_weight = time_weight
-        self.toll_weight = toll_weight
+        # dict [individual] = weight
+        self.time_weight = {}
+        self.toll_weight = {}
+        if not individual_id is None and not time_weight is None and not toll_weight is None:
+            self.time_weight[individual_id] = time_weight
+            self.toll_weight[individual_id] = toll_weight
         if not starting_node is None:
             self.starting_node = starting_node
         else:
@@ -85,18 +93,18 @@ class InputFileVehicleData:
     def get_termination_node(self):
         return self.termination_node
 
-    def weight(self, time, toll):
-        self.time_weight = time
-        self.toll_weight = toll
+    def weight(self, individual, time, toll):
+        self.time_weight[individual] = time
+        self.toll_weight[individual] = toll
 
     def get_destiny(self):
         return self.termination_node
 
-    def get_timew(self):
-        return self.time_weight
+    def get_timew(self, individual):
+        return self.time_weight[individual]
 
-    def get_tollw(self):
-        return self.toll_weight
+    def get_tollw(self, individual):
+        return self.toll_weight[individual]
 
 
 class EdgesOrientation(Enum):
@@ -135,18 +143,36 @@ class MyGrid(Network):
 
     @staticmethod
     def gen_custom_start_pos( cls, net_params, initial_config, num_vehicles):
-        if "start_positions" in network_vehicles_data and "start_lanes" in network_vehicles_data:
+        individual_id = net_params.additional_params['individual_id']
+        weight_path = net_params.additional_params['weight_path']
+        print('!!!!!!!!!!!!!!!!!!!!   {}\n{}   !!!!!!!!!!!!!!!!!!!!'.format(individual_id, weight_path))
+        # check wheter the individual's weight file was read
+        # if it was read, then individuals'weight were saved as well as start positions and start lanes
+        if  individual_id in network_vehicles_data:
             return network_vehicles_data["start_positions"], network_vehicles_data["start_lanes"]
         else:
-            start_lanes = []        # list of int
-            start_positions = []    # list of tuples
-            use_input_file = net_params.additional_params["use_input_file_to_get_starting_positions"]
-            if use_input_file:
-                path = net_params.additional_params["input_file_path"]
-                gen_custom_start_pos_using_input_file_data(net_params, num_vehicles, start_lanes, start_positions, path)
+            # if individual's weight file was not read but we have start positions and start lanes,
+            # then another individual must have been read first
+            # now, we only need to read the individual's weight file
+            if "start_positions" in network_vehicles_data and "start_lanes" in network_vehicles_data:
+                read_weight_input(net_params)
+                return network_vehicles_data["start_positions"], network_vehicles_data["start_lanes"]
+            # if neither the individual's weight file was read and we do not have the start positions and start lanes,
+            # then, this individual is the first we are reading
+            # therefore, we must create all vehicles
             else:
-                gen_custom_start_pos_using_network_data(net_params, num_vehicles, start_lanes, start_positions)
-            return start_positions, start_lanes
+                start_lanes = []        # list of int
+                start_positions = []    # list of tuples
+                use_input_file = net_params.additional_params["use_input_file_to_get_starting_positions"]
+                if use_input_file:
+                    path = net_params.additional_params["input_file_path"]
+                    gen_custom_start_pos_using_input_file_data(net_params, num_vehicles, start_lanes, start_positions, path)
+                else:
+                    gen_custom_start_pos_using_network_data(net_params, num_vehicles, start_lanes, start_positions)
+                network_vehicles_data["start_positions"] = start_positions
+                network_vehicles_data["start_lanes"] = start_lanes
+                read_weight_input(net_params)
+                return start_positions, start_lanes
     
     # ok
     def generate_edges(self, orientation, speed_limit, edge_length, num_lanes,):
@@ -241,13 +267,11 @@ class MyGrid(Network):
         artificial_nodes = []
         for node in nodes:
             artificial_nodes.append({
-                "id": "Articiial" + node["id"],
+                "id": "Artificial" + node["id"],
                 "x":    node["x"] + (length*0.8),
                 "y":    node["y"] + (length*0.6), 
             })
         nodes += artificial_nodes
-        print('nodes:')
-        print(nodes)
         ## -- update grid -- ##
         return nodes
 
@@ -262,7 +286,7 @@ class MyGrid(Network):
             edges.extend(self.generate_edges(orientation, speed_limit, edge_length, num_lanes))
 
         ## -- update grid -- ##
-        multlanes = 2
+        multlanes = 1
         for v in range(NUMBER_OF_VERTICAL_NODES):
             for h in range(NUMBER_OF_HORIZONTAL_NODES):
                 node = str(v) + str(h)
@@ -277,17 +301,15 @@ class MyGrid(Network):
                 # -- describing edge format -- #
                 edges.append(
                     {
-                        "id": "fromArticiial{}to{}".format(node, node),
+                        "id": "fromArtificial{}to{}".format(node, node),
                         "numLanes": multlanes * num_lanes, 
                         "speed": speed_limit,
-                        "from": "Articiial{}".format(node), 
+                        "from": "Artificial{}".format(node), 
                         "to": "{}".format(node), 
                         "length": edge_length,
                         "shape": shape,                 
                     }
                 )
-        print('edges')
-        print(edges)
         ## -- update grid -- ##
         return edges
 
@@ -302,10 +324,8 @@ class MyGrid(Network):
         for v in range(NUMBER_OF_VERTICAL_NODES):
             for h in range(NUMBER_OF_HORIZONTAL_NODES):
                 node = str(v) + str(h)
-                edge = "fromArticiial{}to{}".format(node, node)
+                edge = "fromArtificial{}to{}".format(node, node)
                 rts[edge] = [edge]
-        print('routes')
-        print(rts)
         ## -- update grid -- ##
         return rts
     
@@ -366,10 +386,8 @@ class MyGrid(Network):
         for v in range(NUMBER_OF_VERTICAL_NODES):
             for h in range(NUMBER_OF_HORIZONTAL_NODES):
                 node = str(v) + str(h)
-                edge = "fromArticiial{}to{}".format(node, node)
+                edge = "fromArtificial{}to{}".format(node, node)
                 edgestarts.append((edge, (lane_length*v) + int(lane_length*0.6) ))
-        print('edge starts:')
-        print(edgestarts)
         ## -- update grid -- ##
         return edgestarts
 
@@ -739,9 +757,6 @@ def gen_custom_start_pos_using_network_data( net_params, num_vehicles, start_lan
             first_edge=start_positions[-1], 
             termination_node=dst, 
             starting_node=src)
-    network_vehicles_data["start_positions"] = start_positions
-    network_vehicles_data["start_lanes"] = start_lanes
-    read_weight_input(net_params)
 
 
 def gen_custom_start_pos_using_input_file_data_in_edge_to_node_pd_format(net_params, num_vehicles, start_lanes, start_positions, edges, probability_distribution):
@@ -765,9 +780,6 @@ def gen_custom_start_pos_using_input_file_data_in_edge_to_node_pd_format(net_par
         # TODO: alterar isso! Ver se há uma forma de recuperar os id's dos veículos.
         veh_id = 'human_' + str(veh)
         network_vehicles_data[veh_id] = InputFileVehicleData(veh_id, lane, edge, termination_node)
-    network_vehicles_data["start_positions"] = start_positions
-    network_vehicles_data["start_lanes"] = start_lanes
-    read_weight_input(net_params)
 
 
 def gen_custom_start_pos_using_input_file_data_in_edge_to_node_list_format(net_params, num_vehicles, start_lanes, start_positions, data):
@@ -782,12 +794,10 @@ def gen_custom_start_pos_using_input_file_data_in_edge_to_node_list_format(net_p
             raise
         start_positions.append((edge, edge_pos))
         veh_id = 'human_' + str(veh)
-        network_vehicles_data[veh_id] = InputFileVehicleData(veh_id, lane, edge, dst, time_weight=0.5, toll_weight=0.5)
+        network_vehicles_data[veh_id] = InputFileVehicleData(veh_id, lane, edge, dst)
         veh += 1
     if not veh == num_vehicles:
         raise
-    network_vehicles_data["start_positions"] = start_positions
-    network_vehicles_data["start_lanes"] = start_lanes
 
 def gen_custom_start_pos_using_input_file_data_in_node_to_node_format(net_params, num_vehicles, start_lanes, start_positions, nodes, probability_distribution):
     num_lanes = net_params.additional_params["num_lanes"]
@@ -803,9 +813,6 @@ def gen_custom_start_pos_using_input_file_data_in_node_to_node_format(net_params
         veh_id = 'human_' + str(veh)
         select_what_node_should_go_next(net_params, start_positions, s[0], s[1])
         network_vehicles_data[veh_id] = InputFileVehicleData(veh_id, lane, start_positions[-1], t, starting_node=s)
-    network_vehicles_data["start_positions"] = start_positions
-    network_vehicles_data["start_lanes"] = start_lanes
-    read_weight_input(net_params)
 
 
 
@@ -896,6 +903,14 @@ def make_edge_string(src_y:int, src_x:int, dst_y:int, dst_x:int):
 
 def read_weight_input(net_params):
     weight_path = net_params.additional_params['weight_path']
+    individual_id = net_params.additional_params['individual_id']
     df = pd.read_csv(weight_path)
     for index, row in df.iterrows():
-        network_vehicles_data[row['veh_id']].weight(row['time_weight'], row['toll_weight'])
+        network_vehicles_data[row['veh_id']].weight(individual_id, row['time_weight'], row['toll_weight'])
+        print('individual id: {}, timew: {}, tollw: {}'.format(
+            individual_id, 
+            row['time_weight'], 
+            row['toll_weight']
+            )
+        )
+    network_vehicles_data[individual_id] = True

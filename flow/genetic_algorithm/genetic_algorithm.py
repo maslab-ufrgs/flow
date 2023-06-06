@@ -94,9 +94,10 @@ class Individual:
             return self.value
         else:
             self.set_value(run(
-                self.num_vehicles, 
-                self.id, exp_tag, 
-                self.weight_path, 
+                num_vehicles=self.num_vehicles, 
+                individual_id=self.id, 
+                exp_tag=exp_tag, 
+                weight_path=self.weight_path, 
                 num_runs=num_runs, 
                 individual_subfolder= str(self.subfolder),
                 host=host)

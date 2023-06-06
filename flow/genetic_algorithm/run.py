@@ -18,18 +18,17 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
                 veh_id="human",
                 acceleration_controller=(IDMController, {}),
                 routing_controller=(MyGridRouterOnlyWhenVehiclesAreReseting, {}),
-                # routing_controller=(MyGridRouterUsingPredefinedRoutes, {}),
                 num_vehicles=num_vehicles,
                 )
     if host == 'lab':
         parentdir= '/home/lab204/Desktop/marco/maslab/flow/data'
-        costs_path= '/home/lab204/Desktop/marco/maslab/flow/flow/inputs/costs/costs.txt'
+        costs_path= '/home/lab204/Desktop/marco/maslab/flow/flow/inputs/costs/edgesCost.txt'
         edges_path= '/home/lab204/Desktop/marco/maslab/flow/data/{}/edges.csv'.format(exp_tag)
         junctions_path= '/home/lab204/Desktop/marco/maslab/flow/data/{}/junctions.csv'.format(exp_tag)
         sonet_path = '/home/lab204/Desktop/marco/maslab/flow/data/{}/system_optimum/so_net.txt'.format(exp_tag)
     elif host == 'home':
         parentdir= '/home/macsilva/Desktop/maslab/flow/data'
-        costs_path= '/home/macsilva/Desktop/maslab/flow/flow/inputs/costs/costs.txt'
+        costs_path= '/home/macsilva/Desktop/maslab/flow/flow/inputs/costs/edgesCost.txt'
         edges_path= '/home/macsilva/Desktop/maslab/flow/data/{}/edges.csv'.format(exp_tag)
         junctions_path= '/home/macsilva/Desktop/maslab/flow/data/{}/junctions.csv'.format(exp_tag)
         sonet_path = '/home/macsilva/Desktop/maslab/flow/data/{}/system_optimum/so_net.txt'.format(exp_tag)
@@ -37,7 +36,7 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
         quit('error -- run -- invalid host')
     emission_path = create_dir(individual_id, individual_subfolder, exp_tag, parentdir=parentdir)
     # sim_params = SumoParams(sim_step=sim_step, emission_path=emission_path, render=False)
-    sim_params = SumoParams(sim_step=sim_step, emission_path=emission_path, render=True)
+    sim_params = SumoParams(sim_step=sim_step, emission_path=emission_path, render=False, color_by_speed=True, no_step_log=True)
     initial_config = InitialConfig(bunching=bunching, spacing="custom")
     additional_env_params ={
         'individual_id'     :   individual_id,
@@ -46,21 +45,24 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
         'costs_path'        :   costs_path,
         'edges_path'        :   edges_path,
         'junctions_path'    :   junctions_path,
-        'sonet_path':   sonet_path,
+        'sonet_path'        :   sonet_path,
     }
     env_params=EnvParams(
             horizon=horizon,
             additional_params=additional_env_params
         )
     additional_net_params={
-        "num_lanes":    NUM_LANES,
-        "speed_limit":  SPEED_LIMIT,
-        "lane_length":  LANE_LENGTH,
+        "num_lanes"         :   NUM_LANES,
+        "speed_limit"       :   SPEED_LIMIT,
+        "lane_length"       :   LANE_LENGTH,
+        'individual_id'     :   individual_id,
+        "weight_path"       :   weight_path,
         "use_input_file_to_get_starting_positions": True,
-        "input_file_path": "../../flow/inputs/networks/newGrid5by5.txt",
-        "weight_path":weight_path,
+        "input_file_path": "../../flow/inputs/networks/system_optimum_starting_positions.txt",
+        # "input_file_path":"../../flow/inputs/networks/newGrid5by5.txt",
+        # "input_file_path":"../../flow/inputs/networks/newGrid_nodeToNode.txt",
     }
-    net_params = NetParams(additional_params=additional_net_params)
+    net_params = NetParams( additional_params=additional_net_params)
 
     flow_params= dict(
         exp_tag=    'geneticalgorithm',
@@ -96,7 +98,7 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
 
     exp = experiment.Experiment(flow_params)
     rldata = exp.run(num_runs, convert_to_csv=save_data)
-    return get_vehicle_value(emission_path)
+    return get_value(emission_path)
 
 
 def create_dir(individual, subfolder, exp_tag, parentdir='/home/lab204/Desktop/marco/maslab/flow/data'):
@@ -117,10 +119,10 @@ def create_dir(individual, subfolder, exp_tag, parentdir='/home/lab204/Desktop/m
     os.mkdir(path)
     return path
 
-def get_vehicle_value(emission_path):
+def get_value(emission_path):
     vehicles_path = emission_path + '/vehicles.csv'
     df = pd.read_csv(vehicles_path)
-    return df.groupby(['run','veh_id']).mean().mean()['time']
+    return df.groupby(['veh_id','run']).sum().mean()['time']
 
 def save_experiment_configurations_into_json(
     num_vehicles,

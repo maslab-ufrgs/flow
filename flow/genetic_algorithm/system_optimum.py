@@ -4,7 +4,7 @@ from flow.core import experiment
 from flow.core.params import SumoParams, EnvParams, InitialConfig, NetParams
 from flow.core.params import *
 from flow.envs import *
-from flow.genetic_algorithm.run import get_vehicle_value
+from flow.genetic_algorithm.run import get_value
 from flow.networks import *
 import pandas as pd
 import os
@@ -12,10 +12,13 @@ import json
 import sys
 from flow.genetic_algorithm.parser import *
 
+
 args = parse_args(sys.argv[1:])
 if args.host == 'lab':
     so_path = '/home/lab204/Desktop/marco/maslab/flow/data/{}/system_optimum/data.txt'.format(args.exp_tag)
+    individual_id = '/home/lab204/Desktop/marco/maslab/flow/data/{}/system_optimum/'.format(args.exp_tag)
 elif args.host == 'home':
+    individual_id = '/home/macsilva/Desktop/maslab/flow/data/{}/system_optimum/'.format(args.exp_tag)
     so_path = '/home/macsilva/Desktop/maslab/flow/data/{}/system_optimum/data.txt'.format(args.exp_tag)
 else: 
     raise
@@ -30,8 +33,8 @@ vehicles.add(
             veh_id="human",
             acceleration_controller=(IDMController, {}),
             routing_controller=(
-                MyGridRouterOnlyWhenVehiclesAreReseting,
-                # MyGridRouterUsingPredefinedRoutes, 
+                # MyGridRouterOnlyWhenVehiclesAreReseting,
+                MyGridRouterUsingPredefinedRoutes, 
                 additional_router_params),
             num_vehicles=data['num_vehicles'],
             )
@@ -46,19 +49,21 @@ additional_env_params ={
     'edges_path'    :       data['edges_path'],
     'junctions_path':       data['junctions_path'],
     'sonet_path'    :       data['sonet_path'],
+    'individual_id' :       individual_id,
 }
 env_params=EnvParams(
         horizon=data['horizon'],
         additional_params=additional_env_params
     )
 additional_net_params={
-    "num_lanes":    1,
-    "speed_limit":  10,
-    "lane_length":  100,
+    "num_lanes":        data["num_lanes"],
+    "speed_limit":      data['speed_limit'],
+    "lane_length":      data["lane_length"],
     "use_input_file_to_get_starting_positions": True,
     # obtido atraves do script de system optimum
     "input_file_path": "../../flow/inputs/networks/system_optimum_starting_positions.txt",
-    "weight_path":data['weight_path'],
+    "weight_path":      data['weight_path'],
+    "individual_id":    individual_id,
 }
 net_params = NetParams(additional_params=additional_net_params)
 flow_params = dict(
@@ -78,5 +83,5 @@ rldata = exp.run(
     convert_to_csv=False)
 print('\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
 print('emission path: {}'.format(data['emission_path']))
-print('best value: {}'.format(get_vehicle_value(data['emission_path'])))
+print('best value: {}'.format(get_value(data['emission_path'])))
 print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')

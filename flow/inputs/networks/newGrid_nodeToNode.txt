@@ -1,0 +1,12 @@
+# type: node_to_node, edge_to_node_pd, edge_to_node_list, edges_toll_cost
+node_to_node
+# number of horizontal nodes (integer), number of vertical nodes (integer)
+3,3
+# source node id (string), termination node id (string), probability of selecting these pair (float)
+Artificial00,22,0.5
+Artificial01,20,0.1
+Artificial10,02,0.1
+Artificial20,02,0.1
+Artificial21,00,0.1
+Artificial12,11,0.05
+Artificial22,01,0.05
