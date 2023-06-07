@@ -145,7 +145,6 @@ class MyGrid(Network):
     def gen_custom_start_pos( cls, net_params, initial_config, num_vehicles):
         individual_id = net_params.additional_params['individual_id']
         weight_path = net_params.additional_params['weight_path']
-        print('!!!!!!!!!!!!!!!!!!!!   {}\n{}   !!!!!!!!!!!!!!!!!!!!'.format(individual_id, weight_path))
         # check wheter the individual's weight file was read
         # if it was read, then individuals'weight were saved as well as start positions and start lanes
         if  individual_id in network_vehicles_data:
@@ -907,10 +906,4 @@ def read_weight_input(net_params):
     df = pd.read_csv(weight_path)
     for index, row in df.iterrows():
         network_vehicles_data[row['veh_id']].weight(individual_id, row['time_weight'], row['toll_weight'])
-        print('individual id: {}, timew: {}, tollw: {}'.format(
-            individual_id, 
-            row['time_weight'], 
-            row['toll_weight']
-            )
-        )
     network_vehicles_data[individual_id] = True

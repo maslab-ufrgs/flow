@@ -1013,7 +1013,6 @@ class TraCIVehicle(KernelVehicle):
 
         for i, veh_id in enumerate(veh_ids):
             if route_choices[i] is not None:
-                print('** setRoute vehicle {} w/ route choice: {} **'.format(veh_id, route_choices[i]))
                 self.kernel_api.vehicle.setRoute(
                     vehID=veh_id, edgeList=route_choices[i])
 

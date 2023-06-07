@@ -53,6 +53,7 @@ class Vehicle():
         return sum(self.costs)
 
     def get_paths(self):
+        print(self)
         return self.paths
 
     def get_path(self, exec):
@@ -331,9 +332,6 @@ class myEnvironment(Env):
         emission_path = self.sim_params.emission_path
         individual_id = self.env_params.additional_params['individual_id']
         self.databases[individual_id].terminate(emission_path)
-        print('$$$$$$$$$$$$$$$$$$$   {}   $$$$$$$$$$$$$$$$$$$'.format(individual_id))
-        for key in network_vehicles_data:
-            print('******nvd[{}] = {}'.format(key, network_vehicles_data[key]))
         super().terminate()
 
     def get_destiny(self, veh_id):
