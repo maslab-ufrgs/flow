@@ -58,9 +58,7 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
         'individual_id'     :   individual_id,
         "weight_path"       :   weight_path,
         "use_input_file_to_get_starting_positions": True,
-        "input_file_path": "../../flow/inputs/networks/system_optimum_starting_positions.txt",
-        # "input_file_path":"../../flow/inputs/networks/newGrid5by5.txt",
-        # "input_file_path":"../../flow/inputs/networks/newGrid_nodeToNode.txt",
+        "input_file_path": "../../flow/inputs/networks/250vehicles.txt",
     }
     net_params = NetParams( additional_params=additional_net_params)
 
