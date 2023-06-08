@@ -15,11 +15,11 @@ from flow.genetic_algorithm.parser import *
 
 args = parse_args(sys.argv[1:])
 if args.host == 'lab':
-    so_path = '/home/lab204/Desktop/marco/maslab/flow/data/{}/system_optimum/data.txt'.format(args.exp_tag)
-    individual_id = '/home/lab204/Desktop/marco/maslab/flow/data/{}/system_optimum/'.format(args.exp_tag)
+    so_path = '/home/lab204/Desktop/marco/maslab/flow/data/{}/data.txt'.format(args.exp_tag)
+    individual_id = '/home/lab204/Desktop/marco/maslab/flow/data/{}/'.format(args.exp_tag)
 elif args.host == 'home':
-    individual_id = '/home/macsilva/Desktop/maslab/flow/data/{}/system_optimum/'.format(args.exp_tag)
-    so_path = '/home/macsilva/Desktop/maslab/flow/data/{}/system_optimum/data.txt'.format(args.exp_tag)
+    individual_id = '/home/macsilva/Desktop/maslab/flow/data/{}/'.format(args.exp_tag)
+    so_path = '/home/macsilva/Desktop/maslab/flow/data/{}/data.txt'.format(args.exp_tag)
 else: 
     raise
 with open(so_path, 'r') as file:
@@ -33,7 +33,6 @@ vehicles.add(
             veh_id="human",
             acceleration_controller=(IDMController, {}),
             routing_controller=(
-                # MyGridRouterOnlyWhenVehiclesAreReseting,
                 MyGridRouterUsingPredefinedRoutes, 
                 additional_router_params),
             num_vehicles=data['num_vehicles'],
@@ -42,7 +41,6 @@ vehicles.add(
 sim_params = SumoParams(sim_step=data['sim_step'], emission_path=data['emission_path'], render=True)
 initial_config = InitialConfig(bunching=data['bunching'], spacing="custom")
 additional_env_params ={
-    'individual_id' :       data['individual_path'],
     'emission_path' :       data['emission_path'],
     'weight_path'   :       data['weight_path'],
     'costs_path'    :       data['costs_path'],
@@ -83,5 +81,5 @@ rldata = exp.run(
     convert_to_csv=False)
 print('\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
 print('emission path: {}'.format(data['emission_path']))
-print('best value: {}'.format(get_value(data['emission_path'])))
+print('best value: {}'.format(get_value(data['emission_path'], 1)))
 print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')

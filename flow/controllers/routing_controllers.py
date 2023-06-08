@@ -184,10 +184,9 @@ class MyGridRouterOnlyWhenVehiclesAreReseting(BaseRouter):
         edge = env.k.vehicle.get_edge(veh_id)
         env.update_vehicle_route(veh_id, edge)
         # if environment is reseting: apply dijkstra to get shortest path.
-        if env.could_add_path(veh_id):
+        if env.ableToApplyDijkstra(veh_id):
             route = gen_dijkstra_route(env, edge, veh_id)
             if len(route) > 0 and route[0] == edge:
-                env.add_path(veh_id, route)
                 return route
             else:
                 return None
@@ -198,16 +197,17 @@ class MyGridRouterUsingPredefinedRoutes(BaseRouter):
         veh_id = self.veh_id
         edge = env.k.vehicle.get_edge(veh_id)
         env.update_vehicle_route(veh_id, edge)
-        if env.could_add_path(veh_id):
-            route = self.read_routes_file()
+        if env.ableToApplyDijkstra(veh_id):
+            # if environment is reseting: read routing file.
+            route = self.read_routes_file(env, veh_id)
             if len(route) > 0 and route[0] == edge:
-                env.add_path(veh_id, route)
                 return route
             else:
                 return None
         return super().choose_route(env)
     
-    def read_routes_file(self):
+    def read_routes_file(self, env, veh_id):
+        env.applyDijkstra(veh_id)
         veh_id = self.veh_id
         path = self.router_params['routes_path']
         line = linecache.getline(path, int(veh_id.replace('human_', '')) + 1)

@@ -31,12 +31,10 @@ def split_string_node_id(edge):
 
 def edge_cost(u, v, env, veh_id):
     edge = "from" + u + "to" + v
-    time = env.get_expecience_time(veh_id, edge)
+    time = env.getExperiencedTime(veh_id, edge)
     toll = env.get_toll_cost(edge)
     timew = env.get_timew(veh_id)
     tollw = env.get_tollw(veh_id)
-    # print('id:{}\ntimew:{},time:{}\ntollw:{},toll:{}\n'.format(veh_id,timew,time,tollw,toll))
-    # print('veh_id:{}\nedge: {}\ntime: {}\ntoll: {}\ntimew: {}\ntollw: {}\n'.format(veh_id, edge, time, toll, timew, tollw))
     return timew*time + tollw*toll
 
 # ok
@@ -110,6 +108,7 @@ def make_route(nodes_list):
 
 def gen_dijkstra_route(env, edge, veh_id):
     if not edge in env.k.network._junction_list:
+        env.applyDijkstra(veh_id)
         node_from, node_to = split_string_node_id(edge)
         previous, distance = dijkstra(node_to, env, veh_id, [node_from])
         path = [node_from]

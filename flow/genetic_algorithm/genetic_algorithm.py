@@ -20,7 +20,6 @@ class Individual:
         self.value = deepcopy(DEFAULTVALUE)
         self.mutationflag = False
         self.weight_path = self.to_csv(host)
-        self.subfolder = 0
     
     def __str__(self) -> str:
         return 'id: {};\ntimews: {};\ntollws: {};\nnum_vehicles: {};\nvalue: {};\n'.format(
@@ -99,10 +98,8 @@ class Individual:
                 exp_tag=exp_tag, 
                 weight_path=self.weight_path, 
                 num_runs=num_runs, 
-                individual_subfolder= str(self.subfolder),
                 host=host)
             )
-            self.subfolder += 1
             return self.value
 
 def ga(num_vehicles, pop_size, num_runs, exp_tag,tournament_size=0, num_generations=1, host='lab'):

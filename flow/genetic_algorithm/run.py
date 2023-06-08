@@ -12,7 +12,7 @@ NUM_LANES = 1
 SPEED_LIMIT = 10
 LANE_LENGTH = 100
 
-def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder='0', host='lab',num_runs=1, horizon=3000, sim_step=0.1, bunching=40, save_data=True):
+def run(num_vehicles, individual_id,  exp_tag, weight_path, host='lab',num_runs=1, horizon=3000, sim_step=0.1, bunching=40, save_data=False):
     vehicles = VehicleParams()
     vehicles.add(
                 veh_id="human",
@@ -25,18 +25,19 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
         costs_path= '/home/lab204/Desktop/marco/maslab/flow/flow/inputs/costs/edgesCost.txt'
         edges_path= '/home/lab204/Desktop/marco/maslab/flow/data/{}/edges.csv'.format(exp_tag)
         junctions_path= '/home/lab204/Desktop/marco/maslab/flow/data/{}/junctions.csv'.format(exp_tag)
-        sonet_path = '/home/lab204/Desktop/marco/maslab/flow/data/{}/system_optimum/so_net.txt'.format(exp_tag)
+        sonet_path = '/home/lab204/Desktop/marco/maslab/flow/data/{}/so_net.txt'.format(exp_tag)
     elif host == 'home':
         parentdir= '/home/macsilva/Desktop/maslab/flow/data'
         costs_path= '/home/macsilva/Desktop/maslab/flow/flow/inputs/costs/edgesCost.txt'
         edges_path= '/home/macsilva/Desktop/maslab/flow/data/{}/edges.csv'.format(exp_tag)
         junctions_path= '/home/macsilva/Desktop/maslab/flow/data/{}/junctions.csv'.format(exp_tag)
-        sonet_path = '/home/macsilva/Desktop/maslab/flow/data/{}/system_optimum/so_net.txt'.format(exp_tag)
+        sonet_path = '/home/macsilva/Desktop/maslab/flow/data/{}/so_net.txt'.format(exp_tag)
     else:
         quit('error -- run -- invalid host')
-    emission_path = create_dir(individual_id, individual_subfolder, exp_tag, parentdir=parentdir)
+    emission_path = create_dir(exp_tag, parentdir=parentdir)
     # sim_params = SumoParams(sim_step=sim_step, emission_path=emission_path, render=False)
-    sim_params = SumoParams(sim_step=sim_step, emission_path=emission_path, render=False, color_by_speed=True, no_step_log=True)
+    # sim_params = SumoParams(sim_step=sim_step, emission_path=emission_path, render=False, color_by_speed=True, no_step_log=True)
+    sim_params = SumoParams(sim_step=sim_step, render=False, color_by_speed=True, no_step_log=True)
     initial_config = InitialConfig(bunching=bunching, spacing="custom")
     additional_env_params ={
         'individual_id'     :   individual_id,
@@ -75,6 +76,7 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
     )
 
     save_experiment_configurations_into_json(
+        emission_path=emission_path,
         num_vehicles=num_vehicles,
         exp_tag=exp_tag,
         weight_path=weight_path,
@@ -96,33 +98,26 @@ def run(num_vehicles, individual_id,  exp_tag, weight_path, individual_subfolder
 
     exp = experiment.Experiment(flow_params)
     rldata = exp.run(num_runs, convert_to_csv=save_data)
-    return get_value(emission_path)
+    return get_value(emission_path, num_runs)
 
 
-def create_dir(individual, subfolder, exp_tag, parentdir='/home/lab204/Desktop/marco/maslab/flow/data'):
+def create_dir(exp_tag, parentdir='/home/lab204/Desktop/marco/maslab/flow/data'):
     # '/home/macsilva/Desktop/maslab/flow/data/<exp_tag>'
     path = os.path.join(parentdir, exp_tag)
-    system_optimum_folder = 'system_optimum'
     if not exp_tag in os.listdir(parentdir):
         os.mkdir(path)
-    ind = 'individual_' + str(individual)
-    if not ind in os.listdir(path):
-        os.mkdir(path + '/' + ind)
-    if not system_optimum_folder in os.listdir(path):
-        os.mkdir(path + '/' + system_optimum_folder)
-    # '/home/macsilva/Desktop/maslab/flow/data/<exp_tag>/individual_<individual>/'
-    path = os.path.join(path, ind)
-    # '/home/macsilva/Desktop/maslab/flow/data/<exp_tag>/individual_<individual>/<subfolder>'
-    path = os.path.join(path, subfolder)
-    os.mkdir(path)
     return path
 
-def get_value(emission_path):
+def get_value(emission_path, num_runs):
     vehicles_path = emission_path + '/vehicles.csv'
     df = pd.read_csv(vehicles_path)
-    return df.groupby(['veh_id','run']).sum().mean()['time']
+    df = df.loc[df['run'] == num_runs - 1]
+    time = df.groupby(['veh_id','run']).sum().mean()['time']
+    os.remove(vehicles_path)
+    return time
 
 def save_experiment_configurations_into_json(
+    emission_path,
     num_vehicles,
     exp_tag,
     weight_path,
@@ -141,12 +136,6 @@ def save_experiment_configurations_into_json(
     num_lanes = NUM_LANES,
     lane_length = LANE_LENGTH,
 ):
-    if host == 'lab':
-        so_path = '/home/lab204/Desktop/marco/maslab/flow/data/{}/system_optimum'.format(exp_tag)
-    elif host == 'home':
-        so_path = '/home/macsilva/Desktop/maslab/flow/data/{}/system_optimum'.format(exp_tag)
-    else:
-        raise
     data = {
         'num_vehicles'      : num_vehicles,
         'exp_tag'           : exp_tag,
@@ -165,9 +154,8 @@ def save_experiment_configurations_into_json(
         'speed_limit'       : speed_limit,
         'num_lanes'         : num_lanes,
         'lane_length'       : lane_length,
-        'individual_path'   : so_path,
-        'emission_path'     : so_path,
+        'emission_path'     : emission_path,
     }
-    with open(so_path + '/data.txt', 'w') as file:
+    with open(emission_path + '/data.txt', 'w') as file:
         json.dump(data, file)
     
