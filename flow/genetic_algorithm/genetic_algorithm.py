@@ -68,9 +68,9 @@ class Individual:
     def to_csv(self, host='lab'):
         # individual = [(timew1, tollw1), (timew2, tollw2), ..., (timewM, tollwM)]
         if host == 'lab':
-            path = '/home/lab204/Desktop/marco/maslab/flow/flow/data/weights/individual_{}.csv'.format(self.id)
+            path = '/home/lab204/Desktop/marco/maslab/flow/flow/genetic_algorithm/csv/weights/individual_{}.csv'.format(self.id)
         elif host == 'home':
-            path = '/home/macsilva/Desktop/maslab/flow/flow/data/weights/individual_{}.csv'.format(self.id)
+            path = '/home/macsilva/Desktop/maslab/flow/flow/genetic_algorithm/csv/weights/individual_{}.csv'.format(self.id)
         else:
             quit('error -- to_csv -- invalid host!')
         veh_ids = ['human_{}'.format(i) for i in range(self.num_vehicles)]
@@ -179,9 +179,9 @@ best = ga(
     args.host
     )
 if args.host == 'home':
-    bestpath = '/home/macsilva/Desktop/maslab/flow/flow/data/best/{}.txt'.format(args.exp_tag)
+    bestpath = '/home/macsilva/Desktop/maslab/flow/flow/genetic_algorithm/csv/best/{}.txt'.format(args.exp_tag)
 elif args.host == 'lab':
-    bestpath = '/home/lab204/Desktop/marco/maslab/flow/flow/data/best/{}.txt'.format(args.exp_tag)
+    bestpath = '/home/lab204/Desktop/marco/maslab/flow/flow/genetic_algorithm/csv/best/{}.txt'.format(args.exp_tag)
 else:
     quit('No host found')
 with open(bestpath, 'w') as file:

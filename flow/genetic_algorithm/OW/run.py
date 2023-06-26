@@ -19,14 +19,14 @@ from flow.utils.newDijkstra import *
 homePrefix = "/home/macsilva/Desktop/maslab/flow/"
 labPrefix = "/home/lab204/Desktop/marco/maslab/flow/"
 paths = {
-    'graphPath' : "flow/data/graphs/OW.net",
-    'experiencedTimePath' : "flow/data/vehicles_experiences/experiencedTime.csv",
-    'freeFlowPath' : "flow/data/vehicles_experiences/freeFlowTime.csv",
-    'costsPath' : "flow/data/costs/costs.csv",
-    'weightsPath' : "flow/data/weights/",
+    'graphPath' : "flow/genetic_algorithm/csv/graphs/OW.net",
+    'experiencedTimePath' : "flow/genetic_algorithm/csv/vehicles_experiences/experiencedTime.csv",
+    'freeFlowPath' : "flow/genetic_algorithm/csv/vehicles_experiences/freeFlowTime.csv",
+    'costsPath' : "flow/genetic_algorithm/csv/costs/costs.csv",
+    'weightsPath' : "flow/genetic_algorithm/csv/weights/",
     'ow_dir' : "flow/genetic_algorithm/OW/Ortuzar10_1/",
-    'routesPath' : "flow/data/routes/dijks.xml",
-    'emissionPath' : "flow/data/emission/",
+    'routesPath' : "flow/genetic_algorithm/csv/routes/dijks.xml",
+    'emissionPath' : "flow/genetic_algorithm/csv/emission/",
 }
 
 
