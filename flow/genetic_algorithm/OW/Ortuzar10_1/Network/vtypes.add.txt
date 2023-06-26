@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+Luxembourg SUMO Traffic (LuST) Scenario
+This project is licensed under the terms of the MIT license.
+Author: Lara CODECA [codeca@gmail.com]
+-->
+
+<routes>
+    <vType id="default" accel="2.6" decel="4.5" sigma="0.5" length="5.0" minGap="1.5" maxSpeed="70"  speedDev="0.1">
+</routes>  
