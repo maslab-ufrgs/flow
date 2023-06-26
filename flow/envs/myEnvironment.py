@@ -292,13 +292,13 @@ class myEnvironment(Env):
         vel = [self.k.vehicle.get_speed(veh_id) for veh_id in ids]
         return np.concatenate((pos, vel))
 
-    def applyDijkstra(self, veh_id):
-        self.databases[self.env_params.additional_params['individual_id']].applyDijkstra(veh_id)
-
     def compute_reward(self, rl_actions, **kwargs):
         ids = self.k.vehicle.get_ids()
         speeds = self.k.vehicle.get_speed(ids)
         return np.mean(speeds)
+    
+    def applyDijkstra(self, veh_id):
+        self.databases[self.env_params.additional_params['individual_id']].applyDijkstra(veh_id)
 
     def reset(self):    
         if self.execution == FIRST_EXECUTION:

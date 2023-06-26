@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.sf.net/xsd/sumoConfiguration.xsd">
+
+    <input>
+        <net-file value="../ortuzar.net.xml"/>
+        <route-files value="ortuzar-nowait_1080.rou.xml"/>
+        <additional-files value="dua_dump_1080.add.xml"/>
+    </input>
+
+    <output>
+        <summary-output value="summary_1080.xml"/>
+        <tripinfo-output value="tripinfo_1080.xml"/>
+    </output>
+
+    <time>
+        <begin value="0"/>
+    </time>
+
+    <processing>
+        <route-steps value="200"/>
+        <no-internal-links value="false"/>
+        <time-to-teleport value="300"/>
+        <time-to-teleport.highways value="0"/>
+        <eager-insert value="false"/>
+        <lanechange.allow-swap value="false"/>
+    </processing>
+
+    <report>
+        <verbose value="true"/>
+        <no-warnings value="false"/>
+        <no-step-log value="true"/>
+    </report>
+
+    <random_number>
+        <random value="false"/>
+    </random_number>
+    
+    <remote-port value="8813"/>
+
+</configuration>

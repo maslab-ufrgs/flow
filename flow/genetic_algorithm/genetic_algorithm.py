@@ -5,7 +5,7 @@ import subprocess
 import sys
 import pandas as pd
 from flow.genetic_algorithm.parser import parse_args
-from run import *
+from flow.genetic_algorithm.OW.run import *
 
 
 DEFAULTVALUE = float('inf')
@@ -39,7 +39,6 @@ class Individual:
         timews = []
         tollws = []
         count = 0
-        print(new_timews)
         for i in range(self.num_vehicles):
             if a <= i < b:
                 timews.append(new_timews[count])
@@ -69,9 +68,9 @@ class Individual:
     def to_csv(self, host='lab'):
         # individual = [(timew1, tollw1), (timew2, tollw2), ..., (timewM, tollwM)]
         if host == 'lab':
-            path = '/home/lab204/Desktop/marco/maslab/flow/flow/inputs/weights/individual_{}.csv'.format(self.id)
+            path = '/home/lab204/Desktop/marco/maslab/flow/flow/data/weights/individual_{}.csv'.format(self.id)
         elif host == 'home':
-            path = '/home/macsilva/Desktop/maslab/flow/flow/inputs/weights/individual_{}.csv'.format(self.id)
+            path = '/home/macsilva/Desktop/maslab/flow/flow/data/weights/individual_{}.csv'.format(self.id)
         else:
             quit('error -- to_csv -- invalid host!')
         veh_ids = ['human_{}'.format(i) for i in range(self.num_vehicles)]
@@ -88,21 +87,14 @@ class Individual:
         self.mutationflag = False
         self.value = v
 
-    def get_value(self, exp_tag, num_runs, host):
+    def get_value(self, num_runs, host):
         if not self.mutationflag and not self.value == DEFAULTVALUE:
             return self.value
         else:
-            self.set_value(run(
-                num_vehicles=self.num_vehicles, 
-                individual_id=self.id, 
-                exp_tag=exp_tag, 
-                weight_path=self.weight_path, 
-                num_runs=num_runs, 
-                host=host)
-            )
+            self.set_value(run(self.id, host, num_runs))
             return self.value
 
-def ga(num_vehicles, pop_size, num_runs, exp_tag,tournament_size=0, num_generations=1, host='lab'):
+def ga(num_vehicles, pop_size, num_runs, tournament_size=0, num_generations=1, host='lab'):
     if  0 < tournament_size <= pop_size:
         tsize = tournament_size
     else:
@@ -112,14 +104,14 @@ def ga(num_vehicles, pop_size, num_runs, exp_tag,tournament_size=0, num_generati
     for exec in range(num_generations):
         _p = []  
         while len(_p) < len(p):
-            mother = tournament(p, tsize, exp_tag, num_runs, host)
-            father = tournament(p, tsize, exp_tag, num_runs, host)
+            mother = tournament(p, tsize, num_runs, host)
+            father = tournament(p, tsize, num_runs, host)
             ind1, ind2, num_individuals = crossover(mother, father, num_vehicles, num_individuals, host)
             ind1.mutation()
             ind2.mutation()
             _p.append(ind1)
             _p.append(ind2)
-        selection(p, _p, pop_size, exp_tag, num_runs, host)
+        selection(p, _p, pop_size, num_runs, host)
     return p[0] # best
 
 def population(num_vehicles, pop_size, host):
@@ -137,11 +129,11 @@ def population(num_vehicles, pop_size, host):
 
 
 # seleciona k individuos aleatoriamente
-def tournament(population, size, exp_tag, num_runs, host):
+def tournament(population, size, num_runs, host):
     best = None
     bestv = float('inf')
     for index in random.sample(range(0, len(population)), size):
-        v = population[index].get_value(exp_tag, num_runs, host)
+        v = population[index].get_value(num_runs, host)
         if v < bestv:
             best = deepcopy(population[index])
     return best
@@ -162,17 +154,15 @@ def crossover(mother:Individual, father:Individual, num_vehicles:int, num_indivi
         toll_weights=i1_tollws,
         host=host)
     num_individuals += 1 
-    print(i1)
     i2 = Individual(
         id=deepcopy(num_individuals), 
         time_weights=i2_timews,
         toll_weights=i2_tollws,
         host=host)
-    print(i2)
     return i1, i2, num_individuals
 
-def selection(p, _p, pop_size, exp_tag, num_runs, host):
-    best = max([ind for ind in p + _p], key=lambda ind: ind.get_value(exp_tag, num_runs, host))
+def selection(p, _p, pop_size,  num_runs, host):
+    best = max([ind for ind in p + _p], key=lambda ind: ind.get_value(num_runs, host))
     p = random.sample([ind for ind in p + _p], pop_size - 1)
     p.append(best)
     assert len(p) == pop_size
@@ -184,16 +174,14 @@ best = ga(
     args.num_vehicles, 
     args.pop_size, 
     args.num_runs, 
-    args.exp_tag, 
     args.tournament_size, 
     args.num_generations, 
     args.host
     )
-print(best)
 if args.host == 'home':
-    bestpath = '/home/macsilva/Desktop/maslab/flow/data/{}/best.txt'.format(args.exp_tag)
+    bestpath = '/home/macsilva/Desktop/maslab/flow/flow/data/best/{}.txt'.format(args.exp_tag)
 elif args.host == 'lab':
-    bestpath = '/home/lab204/Desktop/marco/maslab/flow/data/{}/best.txt'.format(args.exp_tag)
+    bestpath = '/home/lab204/Desktop/marco/maslab/flow/flow/data/best/{}.txt'.format(args.exp_tag)
 else:
     quit('No host found')
 with open(bestpath, 'w') as file:

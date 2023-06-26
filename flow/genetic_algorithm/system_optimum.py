@@ -4,7 +4,7 @@ from flow.core import experiment
 from flow.core.params import SumoParams, EnvParams, InitialConfig, NetParams
 from flow.core.params import *
 from flow.envs import *
-from flow.genetic_algorithm.run import get_value
+from flow.genetic_algorithm.run_grid import get_value
 from flow.networks import *
 import pandas as pd
 import os

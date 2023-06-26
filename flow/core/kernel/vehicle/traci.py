@@ -192,16 +192,12 @@ class TraCIVehicle(KernelVehicle):
             # add vehicles from a network template, if applicable
             if hasattr(self.master_kernel.network.network,
                        "template_vehicles"):
-                for veh_id in self.master_kernel.network.network. \
-                        template_vehicles:
-                    vals = deepcopy(self.master_kernel.network.network.
-                                    template_vehicles[veh_id])
+                for veh_id in self.master_kernel.network.network.template_vehicles:
+                    vals = deepcopy(self.master_kernel.network.network.template_vehicles[veh_id])
                     # a step is executed during initialization, so add this sim
                     # step to the departure time of vehicles
-                    vals['depart'] = str(
-                        float(vals['depart']) + 2 * self.sim_step)
-                    self.kernel_api.vehicle.addFull(
-                        veh_id, 'route{}_0'.format(veh_id), **vals)
+                    vals['depart'] = str(float(vals['depart']) + 2 * self.sim_step)
+                    self.kernel_api.vehicle.addFull(veh_id, 'route{}_0'.format(veh_id), **vals)
         else:
             self.time_counter += 1
             # update the "last_lc" variable

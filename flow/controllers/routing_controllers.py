@@ -213,3 +213,14 @@ class MyGridRouterUsingPredefinedRoutes(BaseRouter):
         line = linecache.getline(path, int(veh_id.replace('human_', '')) + 1)
         route = line.replace('\n','').split('-')
         return route
+    
+# must be used with GeneticAlgorithmEnv
+class GeneticAlgorithmRouter(BaseRouter):
+    def choose_route(self, env):
+        # recovers vehicle and edge
+        vehId = self.veh_id
+        edgeId = env.k.vehicle.get_edge(vehId)
+        # updates vehicle's experience over edge edgeId
+        print("LOG = env.update for {}, {}".format(vehId, edgeId))
+        env.update(vehId, edgeId)
+        return super().choose_route(env)

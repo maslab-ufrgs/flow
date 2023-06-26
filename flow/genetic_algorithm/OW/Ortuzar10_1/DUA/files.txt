@@ -1,0 +1,9 @@
+This older contains results files resulting from DUAiterate.py script.
+
+- it000 - files from 1st DUA iteration
+- it087 - files from the best DUA iteration (corresponding to 88th iteration)
+- it999 - files form the last DUA iteration (corresponding to 1000th iteration)
+- files.txt - this file
+- main.py - TRACI-based script to extract the drivers' average travel time grouped by OD-pairs
+- summarize.py - python script to extract one or more field from DUA's  summary files
+- summarized-avgtt.[csv|ods] - average travel time of all iterations
