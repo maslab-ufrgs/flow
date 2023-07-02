@@ -119,6 +119,7 @@ def run(individual_id = 0, host='lab',num_runs=1):
     emissionDir = os.listdir(emissionPath)
     emissionFile = emissionPath + emissionDir[0]
     df = pd.read_csv(emissionFile)
+    os.remove(emissionFile)
     time = df.groupby(['id']).count().mean()['time']
     print("individual {} whose value is {}".format(individual_id, time))
     return time

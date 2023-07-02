@@ -1,7 +1,7 @@
 from copy import deepcopy
 from math import ceil
 import random
-import subprocess
+import csv
 import sys
 import pandas as pd
 from flow.genetic_algorithm.parser import parse_args
@@ -11,7 +11,7 @@ from flow.genetic_algorithm.OW.run import *
 DEFAULTVALUE = float('inf')
 
 class Individual:
-    def __init__(self, id, time_weights=[], toll_weights=[], host='lab') -> None:
+    def __init__(self, id, time_weights=[], toll_weights=[], host='lab', generation=0) -> None:
         self.id = id
         self.time_weights = time_weights
         self.toll_weights = toll_weights
@@ -20,6 +20,7 @@ class Individual:
         self.value = deepcopy(DEFAULTVALUE)
         self.mutationflag = False
         self.weight_path = self.to_csv(host)
+        self.generation = generation
     
     def __str__(self) -> str:
         return 'id: {};\ntimews: {};\ntollws: {};\nnum_vehicles: {};\nvalue: {};\n'.format(
@@ -50,7 +51,8 @@ class Individual:
         return timews, tollws
 
 
-    def mutation(self):
+    def mutation(self, generation):
+        self.generation = generation
         self.mutationflag = True
         index = random.randint(0, self.num_vehicles-1)
         timew = random.random()
@@ -87,34 +89,43 @@ class Individual:
         self.mutationflag = False
         self.value = v
 
-    def get_value(self, num_runs, host):
+    def get_value(self, num_runs, host, valuePath):
         if not self.mutationflag and not self.value == DEFAULTVALUE:
             return self.value
         else:
             self.set_value(run(self.id, host, num_runs))
+            self.save_value(valuePath)
             return self.value
+        
+    def save_value(self, path):
+        with open(path, 'a') as file:
+            writer = csv.writer(file)
+            writer.writerow([self.id, self.value, self.generation])
+            file.close()
 
-def ga(num_vehicles, pop_size, num_runs, tournament_size=0, num_generations=1, host='lab'):
+
+def ga(num_vehicles, pop_size, num_runs, valuePath, tournament_size=0, num_generations=1, host='lab'):
     if  0 < tournament_size <= pop_size:
         tsize = tournament_size
     else:
         tsize = ceil(0.1*pop_size) 
-    p = population(num_vehicles, pop_size, host)
+    p = population(num_vehicles, pop_size, host, 0)
     num_individuals = deepcopy(pop_size)
-    for exec in range(num_generations):
+    for generation in range(num_generations):
         _p = []  
         while len(_p) < len(p):
-            mother = tournament(p, tsize, num_runs, host)
-            father = tournament(p, tsize, num_runs, host)
-            ind1, ind2, num_individuals = crossover(mother, father, num_vehicles, num_individuals, host)
-            ind1.mutation()
-            ind2.mutation()
+            gen = generation + 1
+            mother = tournament(p, tsize, num_runs, host, valuePath)
+            father = tournament(p, tsize, num_runs, host, valuePath)
+            ind1, ind2, num_individuals = crossover(mother, father, num_vehicles, num_individuals, host, gen)
+            ind1.mutation(gen)
+            ind2.mutation(gen)
             _p.append(ind1)
             _p.append(ind2)
-        selection(p, _p, pop_size, num_runs, host)
+        selection(p, _p, pop_size, num_runs, host, valuePath)
     return p[0] # best
 
-def population(num_vehicles, pop_size, host):
+def population(num_vehicles, pop_size, host, generation):
     p = []
     for i in range(pop_size):
         timews = []
@@ -124,21 +135,21 @@ def population(num_vehicles, pop_size, host):
             tollw = 1 - timew
             timews.append(timew)
             tollws.append(tollw)
-        p.append(Individual(i, timews, tollws, host))
+        p.append(Individual(i, timews, tollws, host, generation))
     return p
 
 
 # seleciona k individuos aleatoriamente
-def tournament(population, size, num_runs, host):
+def tournament(population, size, num_runs, host, valuePath):
     best = None
     bestv = float('inf')
     for index in random.sample(range(0, len(population)), size):
-        v = population[index].get_value(num_runs, host)
+        v = population[index].get_value(num_runs, host, valuePath)
         if v < bestv:
             best = deepcopy(population[index])
     return best
 
-def crossover(mother:Individual, father:Individual, num_vehicles:int, num_individuals:int, host:str):
+def crossover(mother:Individual, father:Individual, num_vehicles:int, num_individuals:int, host:str, generation:int):
     i = random.randint(0, num_vehicles-2)
     j = random.randint(i+1, num_vehicles-1)
     mother_timews = deepcopy(mother.get_time_weights(i, j))
@@ -152,17 +163,19 @@ def crossover(mother:Individual, father:Individual, num_vehicles:int, num_indivi
         id=deepcopy(num_individuals), 
         time_weights=i1_timews,
         toll_weights=i1_tollws,
-        host=host)
+        host=host,
+        generation=generation)
     num_individuals += 1 
     i2 = Individual(
         id=deepcopy(num_individuals), 
         time_weights=i2_timews,
         toll_weights=i2_tollws,
-        host=host)
+        host=host,
+        generation=generation)
     return i1, i2, num_individuals
 
-def selection(p, _p, pop_size,  num_runs, host):
-    best = max([ind for ind in p + _p], key=lambda ind: ind.get_value(num_runs, host))
+def selection(p, _p, pop_size,  num_runs, host, valuePath):
+    best = max([ind for ind in p + _p], key=lambda ind: ind.get_value(num_runs, host, valuePath))
     p = random.sample([ind for ind in p + _p], pop_size - 1)
     p.append(best)
     assert len(p) == pop_size
@@ -170,19 +183,30 @@ def selection(p, _p, pop_size,  num_runs, host):
 
 
 args = parse_args(sys.argv[1:])
+valuepath = ""
+if args.host == 'home':
+    bestpath = '/home/macsilva/Desktop/maslab/flow/flow/genetic_algorithm/csv/best/{}.txt'.format(args.exp_tag)
+    valuepath = '/home/macsilva/Desktop/maslab/flow/flow/genetic_algorithm/csv/values/{}.csv'.format(args.exp_tag)
+elif args.host == 'lab':
+    bestpath = '/home/lab204/Desktop/marco/maslab/flow/flow/genetic_algorithm/csv/best/{}.txt'.format(args.exp_tag)
+    valuepath = '/home/lab204/Desktop/marco/maslab/flow/flow/genetic_algorithm/csv/values/{}.csv'.format(args.exp_tag)
+else:
+    quit('No host found')
+
+with open(valuepath, "w") as file:
+    writer = csv.writer(file)
+    writer.writerow(["individual_id", "value", "generation"])
+    file.close()
+
 best = ga(
     args.num_vehicles, 
     args.pop_size, 
     args.num_runs, 
+    valuepath,
     args.tournament_size, 
     args.num_generations, 
     args.host
     )
-if args.host == 'home':
-    bestpath = '/home/macsilva/Desktop/maslab/flow/flow/genetic_algorithm/csv/best/{}.txt'.format(args.exp_tag)
-elif args.host == 'lab':
-    bestpath = '/home/lab204/Desktop/marco/maslab/flow/flow/genetic_algorithm/csv/best/{}.txt'.format(args.exp_tag)
-else:
-    quit('No host found')
+
 with open(bestpath, 'w') as file:
     file.write(str(best))
