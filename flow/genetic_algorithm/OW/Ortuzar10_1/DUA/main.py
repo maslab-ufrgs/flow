@@ -89,7 +89,7 @@ def run(port, sumo_cfg, net_file, end_step):
     step = 0
     
     vehicles = dict()
-    log = open("log.txt", "w")
+    LOG: open("log.txt", "w")
     log.write("Vehicle ID;O;D;Travel time\n")
 	
     while True:

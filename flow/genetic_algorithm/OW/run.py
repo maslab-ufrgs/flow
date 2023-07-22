@@ -1,5 +1,6 @@
 # the TestEnv environment is used to simply simulate the network
 import os
+import shutil
 from flow.envs.geneticAlgorithmEnv import GeneticAlgorithmEnv
 
 # the Experiment class is used for running simulations
@@ -46,29 +47,25 @@ def run(individual_id = 0, host='lab',num_runs=1):
     else:
         prefix = homePrefix
     graphPath = prefix + paths['graphPath']
-    experiencedTimePath = prefix + paths['experiencedTimePath']
+    experiencedTimePath = prefix + paths['experiencedTimePath'].replace(".csv", "_") + str(individual_id) + ".csv"
     freeFlowPath = prefix + paths['freeFlowPath']
     costsPath = prefix + paths['costsPath']
     weightsPath = prefix + paths['weightsPath'] + "individual_" + str(individual_id) + ".csv"
     ow_dir = prefix + paths['ow_dir']
-    routesPath = prefix + paths['routesPath']
+    routesPath = prefix + paths['routesPath'].replace("dijks", str(individual_id))
     emissionPath = prefix + paths['emissionPath']
+    if os.path.exists(emissionPath + str(individual_id) + "/"):
+        shutil.rmtree(emissionPath + str(individual_id) + "/")
+    os.mkdir(emissionPath + str(individual_id) + "/")
+    emissionPath = emissionPath + str(individual_id) + "/"
     ####################################################
     for i in range(num_runs):
-        print("RUN = {}".format(i))
-        emissionDir = os.listdir(emissionPath)
-        if i == 0:
-            # remove possible trash before starting this simulation
-            if os.path.isfile(experiencedTimePath):
-                os.remove(experiencedTimePath)
-            if len(emissionDir) > 0:
-                for f in emissionDir:
-                    os.remove(emissionPath + f)
-                emissionDir = os.listdir(emissionPath)
-
-        # if there is data from the previous runs, use it.
-        if len(emissionDir) > 0:
-            emissionFile = emissionPath + emissionDir[0]
+        print("RUN = {}, INDIVIDUAL = {}".format(i, individual_id))
+        emissionFiles = os.listdir(emissionPath)
+        
+        # if there is data from the previous runs, use it to generate new routes.
+        if len(emissionFiles) > 0:
+            emissionFile = emissionPath + emissionFiles[0]
         else:
             emissionFile = None
 
@@ -77,23 +74,23 @@ def run(individual_id = 0, host='lab',num_runs=1):
         # run dijkstra and create xml routes file 
         createRoutesFile(g, routesPath)
 
-        # clear previous simulation trash to get new emissions at the end of this run
-        if len(emissionDir) > 0:
-            for f in emissionDir:
+        # After using the data to route generation, clear previous simulation trash to get new emissions at the end of this run.
+        if len(emissionFiles) > 0:
+            for f in emissionFiles:
                 os.remove(emissionPath + f)
 
-        env_params = EnvParams(additional_params={
-            "freeflow_path":  freeFlowPath,
-            "weights_path":weightsPath,
+        env_params = EnvParams(
+            # horizon=100,
+            horizon=100000,
+            additional_params={
+            "freeflow_path":    freeFlowPath,
+            "weights_path":     weightsPath,
         })
 
         net_params = NetParams(
             template={
-                # network geometry features
                 "net": os.path.join(ow_dir, "Network/ortuzar.net.xml"),
-                # features associated with the properties of drivers
                 "vtype": os.path.join(ow_dir, "Network/vtypes.add.xml"),
-                # features associated with the routes vehicles take
                 "rou": routesPath,
             }
         )
@@ -103,23 +100,32 @@ def run(individual_id = 0, host='lab',num_runs=1):
             env_name=GeneticAlgorithmEnv,
             network=Network,
             simulator='traci',
-            sim=SumoParams(render=False, sim_step=1),
+            sim=SumoParams(render=False, sim_step=1, emission_path=emissionPath),
             env=env_params,
             net=net_params,
             veh=VehicleParams(),
             initial=InitialConfig(edges_distribution="all"),
         )
 
-        # flow_params['env'].horizon = 100000
-        flow_params['env'].horizon = 1000
-        flow_params['sim'].emission_path = emissionPath
         exp = Experiment(flow_params)
-
         _ = exp.run(1, convert_to_csv=True)
-    emissionDir = os.listdir(emissionPath)
-    emissionFile = emissionPath + emissionDir[0]
+    
+    
+    emissionFiles = os.listdir(emissionPath)
+    if emissionFiles == None or len(emissionFiles) < 1:
+        print(emissionPath)
+        exit("LOG: error when generating emissions file for individual {}.".format(individual_id))
+    emissionFile = emissionPath + emissionFiles[0]
     df = pd.read_csv(emissionFile)
-    os.remove(emissionFile)
     time = df.groupby(['id']).count().mean()['time']
-    print("individual {} whose value is {}".format(individual_id, time))
+    print("LOG: individual {} whose value is {}".format(individual_id, time))
+    shutil.rmtree(emissionPath)
     return time
+
+def remove_routes(individual_id:str, host:str):
+    if host == 'lab':
+        prefix = labPrefix
+    else:
+        prefix = homePrefix
+    routesPath = prefix + paths['routesPath'].replace("dijks", str(individual_id))
+    os.remove(routesPath)

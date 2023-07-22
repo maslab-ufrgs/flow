@@ -48,4 +48,10 @@ def parse_args(args):
         required=False, 
         type=str,
         default='lab')
+    parser.add_argument(
+        '--load_state', 
+        help="To load a previous execution state that was probably wrongly terminated.", 
+        required=False, 
+        type=bool,
+        default=False)
     return parser.parse_known_args(args)[0]

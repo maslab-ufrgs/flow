@@ -221,6 +221,6 @@ class GeneticAlgorithmRouter(BaseRouter):
         vehId = self.veh_id
         edgeId = env.k.vehicle.get_edge(vehId)
         # updates vehicle's experience over edge edgeId
-        print("LOG = env.update for {}, {}".format(vehId, edgeId))
+        print("LOG: env.update for {}, {}".format(vehId, edgeId))
         env.update(vehId, edgeId)
         return super().choose_route(env)

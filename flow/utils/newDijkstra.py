@@ -57,8 +57,8 @@ class Graph():
             self.emissions = pd.DataFrame()
             self.data = pd.read_csv(freeFlowPath)
         self.data.to_csv(experiencedTimePath, index=False)
-        print("LOG: data")
-        print(self.data)
+        # print("LOG: data")
+        # print(self.data)
         self.readGraph(graphPath)
 
     # newEstimate = (1 - alpha) oldEstimate + (alpha) step, where:
@@ -68,8 +68,8 @@ class Graph():
     # alpha = 0.1 by default
     def newEstimate(self):
         alpha = 0.1
-        print("######## BEFORE UPDATING THE TABLE ########")
-        print(self.data)
+        # print("######## BEFORE UPDATING THE TABLE ########")
+        # print(self.data)
         for index in range(len(self.data)):
             vehicle = self.data.iloc[index][0]
             path = list(self.emissions.loc[self.emissions["id"] == vehicle]["edge_id"])
@@ -81,8 +81,8 @@ class Graph():
                         step = float(self.emissions.loc[self.emissions["id"] == vehicle].loc[self.emissions["edge_id"] == edge]["time"].iloc[0])
                         newEst= ((1- alpha) * oldEstimate) + (alpha*step)
                         self.data.set_value(index, edge, newEst)
-        print("######## AFTER UPDATING THE TABLE ########")
-        print(self.data)
+        # print("######## AFTER UPDATING THE TABLE ########")
+        # print(self.data)
 
 
     def getEdgeValue(self, edge:str, vehicleId:str):

@@ -77,11 +77,11 @@ class DataBase:
             self.routes[vKey] = Route(vKey, [])
 
     def update(self, vehId:str, edgeId:str, timeSpent:float):
-        print("LOG = database.update call for {}, {}, {}".format(vehId, edgeId, timeSpent) )
+        print("LOG: database.update call for {}, {}, {}".format(vehId, edgeId, timeSpent) )
         self.routes[vehId].update(edgeId, timeSpent, self.edges[edgeId].cost)
 
     def terminate(self, dataPath:str):
-        print("LOG = Terminando execução. Atualizar dados dos motoristas e salvá-los em CSV.")
+        print("LOG: Terminando execução. Atualizar dados dos motoristas e salvá-los em CSV.")
         for vehicle in self.vehicles:
             print("vehicle = {}".format(vehicle))
             for routeSegment in self.routes[vehicle].routeSegments:
@@ -91,7 +91,7 @@ class DataBase:
         self.toCSV(dataPath)
 
     def toCSV(self, dataPath:str):
-        print("LOG = Salvando dados em CSV.")
+        print("LOG: Salvando dados em CSV.")
         with open(dataPath, "w") as file:
             writer = csv.writer(file)
             edges = []
@@ -118,9 +118,9 @@ def createDataBase(weightsPath:str, costsPath:str, dataPath:str, freeFlowTime:di
     '''
     edges = readEdgesTollCostsFile(costsPath)
     vehicles = readWeightsFile(weightsPath)
-    print("LOG = Criando base de dados.")
+    print("LOG: Criando base de dados.")
     if os.path.isfile(dataPath):
-        print("LOG = Entrei no IF")
+        print("LOG: Entrei no IF")
         # if there is previous data, load that data
         df = pd.read_csv(dataPath)
         for vKey in vehicles:
@@ -129,15 +129,15 @@ def createDataBase(weightsPath:str, costsPath:str, dataPath:str, freeFlowTime:di
                 experiencedTime[eKey] = df.loc[df["vehicleId"] == vKey][eKey].iloc[0]
             vehicles[vKey].setExperiencedTime(experiencedTime)
     else:
-        print("LOG = Entrei no ELSE")
+        print("LOG: Entrei no ELSE")
         # for the first estimative, use free flow time
         for vKey in vehicles:
             vehicles[vKey].setExperiencedTime(freeFlowTime)
-    print("LOG = Parei criar Banco de Dados.")
+    print("LOG: Parei criar Banco de Dados.")
     return DataBase(vehicles, edges)
 
 def readWeightsFile(weightsPath: str):
-    print("LOG = Lendo arquivo de pesos.")
+    print("LOG: Lendo arquivo de pesos.")
     # dict[vehicleId:str] -> Vehicle
     vehicles = {}
     df = pd.read_csv(weightsPath)
@@ -146,7 +146,7 @@ def readWeightsFile(weightsPath: str):
     return vehicles
 
 def readEdgesTollCostsFile(costsPath:str):
-    print("LOG = Lendo arquivo de custos.")
+    print("LOG: Lendo arquivo de custos.")
     # dict[edgeId:str] -> Edge
     edges = {}
     df = pd.read_csv(costsPath)
