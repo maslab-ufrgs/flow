@@ -38,7 +38,8 @@ class TemplateNetwork(Network):
             "A1A": ["A1A"],
             "B1B" : ["B1B"],    
             }
-def run(individual_id = 0, host='lab',num_runs=1):
+
+def run(individual_id = 0, host='lab',num_runs=1, generateFreeFlowTime=False):
     ####################################################
     ## before starting the simulation, set the paths  ##
     ####################################################
@@ -48,8 +49,8 @@ def run(individual_id = 0, host='lab',num_runs=1):
         prefix = homePrefix
     graphPath = prefix + paths['graphPath']
     experiencedTimePath = prefix + paths['experiencedTimePath'].replace(".csv", "_") + str(individual_id) + ".csv"
-    freeFlowPath = prefix + paths['freeFlowPath']
     costsPath = prefix + paths['costsPath']
+    freeFlowPath = prefix + paths['freeFlowPath']
     weightsPath = prefix + paths['weightsPath'] + "individual_" + str(individual_id) + ".csv"
     ow_dir = prefix + paths['ow_dir']
     routesPath = prefix + paths['routesPath'].replace("dijks", str(individual_id))
@@ -85,8 +86,8 @@ def run(individual_id = 0, host='lab',num_runs=1):
             additional_params={
             "freeflow_path":    freeFlowPath,
             "weights_path":     weightsPath,
+            "generateFreeFlowTime": generateFreeFlowTime,
         })
-
         net_params = NetParams(
             template={
                 "net": os.path.join(ow_dir, "Network/ortuzar.net.xml"),
@@ -100,7 +101,7 @@ def run(individual_id = 0, host='lab',num_runs=1):
             env_name=GeneticAlgorithmEnv,
             network=Network,
             simulator='traci',
-            sim=SumoParams(render=False, sim_step=1, emission_path=emissionPath),
+            sim=SumoParams(render=False, sim_step=1, emission_path=emissionPath, no_step_log=True),
             env=env_params,
             net=net_params,
             veh=VehicleParams(),
@@ -129,3 +130,5 @@ def remove_routes(individual_id:str, host:str):
         prefix = homePrefix
     routesPath = prefix + paths['routesPath'].replace("dijks", str(individual_id))
     os.remove(routesPath)
+    experiencedTimePath = prefix + paths['experiencedTimePath'].replace(".csv", "_") + str(individual_id) + ".csv"
+    os.remove(experiencedTimePath)

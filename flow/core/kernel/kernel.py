@@ -75,6 +75,7 @@ class Kernel(object):
         else:
             raise FatalFlowError('Simulator type "{}" is not valid.'.
                                  format(simulator))
+        print("sumo params1.75: {}".format(sim_params))
 
     def pass_api(self, kernel_api):
         """Pass the kernel API to all kernel subclasses."""

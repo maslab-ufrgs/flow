@@ -10,33 +10,33 @@ class GeneticAlgorithmEnv(Env):
         # to be more memory efficient, a new database is created for each individual, 
         # but, because the Env class is a singleton,
         # the Env stays the same for all the individuals
-        self.freeFlowTime()
+        if self.env_params.additional_params["generateFreeFlowTime"]:
+            self.freeFlowTime()
     
     def freeFlowTime(self):
         freeFlowPath = self.env_params.additional_params["freeflow_path"]
         weightsPath = self.env_params.additional_params["weights_path"]
-        if not os.path.isfile(freeFlowPath):
-            freeFlowTimeDict = {}
-            edges = self.k.network.get_edge_list()
-            print("edges = {}".format(edges))
-            for edge in edges:
-                if edge not in self.k.network.get_junction_list():
-                    distance = self.k.network.edge_length(edge)
-                    maxSpeed = self.k.network.speed_limit(edge)
-                    freeFlowTimeDict[edge] = distance/ maxSpeed
-            df = pd.read_csv(weightsPath)
-            vehicles = list(df['veh_id'])
-            print("vehicles = {}".format(vehicles))
-            with open(freeFlowPath, "w") as file:
-                writer = csv.writer(file)
-                header = ["veh_id"] + edges
-                writer.writerow(header)
-                for veh_id in vehicles:
-                    data = [veh_id]
-                    for edge in edges:
-                        data.append(freeFlowTimeDict[edge])
-                    writer.writerow(data)
-            exit("Free flow file generated... Exiting this run")
+        freeFlowTimeDict = {}
+        edges = self.k.network.get_edge_list()
+        print("edges = {}".format(edges))
+        for edge in edges:
+            if edge not in self.k.network.get_junction_list():
+                distance = self.k.network.edge_length(edge)
+                maxSpeed = self.k.network.speed_limit(edge)
+                freeFlowTimeDict[edge] = distance/ maxSpeed
+        df = pd.read_csv(weightsPath)
+        vehicles = list(df['veh_id'])
+        print("vehicles = {}".format(vehicles))
+        with open(freeFlowPath, "w") as file:
+            writer = csv.writer(file)
+            header = ["veh_id"] + edges
+            writer.writerow(header)
+            for veh_id in vehicles:
+                data = [veh_id]
+                for edge in edges:
+                    data.append(freeFlowTimeDict[edge])
+                writer.writerow(data)
+        exit("Free flow file generated... Exiting this run")
     @property
     def action_space(self):
         num_actions = self.initial_vehicles.num_rl_vehicles
@@ -69,3 +69,4 @@ class GeneticAlgorithmEnv(Env):
 class OrtuzarEnv(GeneticAlgorithmEnv):
     def __init__(self, env_params, sim_params, network=None, simulator='traci', scenario=None):
         super().__init__(env_params, sim_params, network, simulator, scenario)
+    

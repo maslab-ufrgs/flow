@@ -196,9 +196,9 @@ class TraCISimulation(KernelSimulation):
                 if sim_params.use_ballistic:
                     sumo_call.append("--step-method.ballistic")
 
-                # ignore step logs (if requested)
-                if sim_params.no_step_log:
-                    sumo_call.append("--no-step-log")
+                # # ignore step logs (if requested)
+                # if sim_params.no_step_log:
+                #     sumo_call.append("--no-step-log")
 
                 # add the lateral resolution of the sublanes (if requested)
                 if sim_params.lateral_resolution is not None:
