@@ -1,5 +1,8 @@
 # import the base environment class
+import csv
 import os
+import string
+import sys
 from flow.envs import Env
 from flow.networks.MyGrid import *
 from gym.spaces.box import Box
@@ -10,15 +13,24 @@ import numpy as np
 FIRST_EXECUTION = -1
 
 class Vehicle():
-    def __init__(self, id, destiny=None, timew=0.5, tollw=0.5, costs=[], routes=[], paths=[], experience={}) -> None:
+    def __init__(self, id, destiny=None, timew=0.5, tollw=0.5, experience={}) -> None:
         self.id = id
-        self.destiny = destiny
-        self.timew = timew
-        self.tollw = tollw  
-        self.costs = costs 
-        self.routes = routes
-        self.paths = paths
-        self.experience = experience
+        self.destiny = destiny  # string
+        self.timew = timew      # float
+        self.tollw = tollw      # float
+        # dict of floats
+        # experiencedTime[edge:string] = time:float, s.t.,
+        # it is the time perceived by the vehicle over the edge
+        self.experiencedTime = experience
+    
+    def __str__(self) -> str:
+        return "Vehicle [ {} ] = (dst: {}, timew: {}, tollw: {}, expertience: {})".format(
+            self.id,
+            self.destiny,
+            self.timew,
+            self.tollw,
+            self.experiencedTime
+        )
 
     def get_destiny(self):
         return self.destiny
@@ -29,46 +41,29 @@ class Vehicle():
     def get_tollw(self):
         return self.tollw
 
-    def get_cost(self, exe):
-        return self.costs[exe]
-    
-    def get_costs(self):
-        return self.costs
-
-    def get_total_cost(self):
-        return sum(self.costs)
-
-    def get_paths(self):
-        return self.paths
-
-    def get_path(self, exec):
-        return self.paths[exec]
-
-    def add_path(self, path):
-        self.paths.append(path)
-
-    def get_expecience_time(self, edge):
-        if edge in self.experience:
-            return self.experience[edge]
+    def getExperiencedTime(self, edge):
+        if edge in self.experiencedTime:
+            return self.experiencedTime[edge]
         else:
             return None
     
     def set_free_flow_time(self, edge, free_flow):
-        self.experience[edge] = free_flow
+        self.experiencedTime[edge] = free_flow
 
-    def update_experience(self, edge, time):
-        print('before -- id:{}, time:{}'.format(self.id, self.experience[edge]))
-        if edge in self.experience:
-            self.experience[edge] = 0.9*self.experience[edge] + 0.1*time
+    def updateTimeExperience(self, edge, time):
+        stepsize = 0.1
+        if edge in self.experiencedTime:
+            # NewEstimate <- OldEstimate + StepSize*(Target - OldEstimate)
+            self.experiencedTime[edge] = self.experiencedTime[edge] + stepsize * (time - self.experiencedTime[edge])
         else:
             quit('ERROR -- UPDATE EXPERIENCE -- NO PREVIOUS EDGE TO UPDATE')
-        print('after -- id:{}, time:{}'.format(self.id, self.experience[edge]))
 
-    def from_str(self):
+
+    def from_str(self, individual_id:str):
         if self.id in network_vehicles_data:
             self.destiny = network_vehicles_data[self.id].get_destiny()
-            self.timew = network_vehicles_data[self.id].get_timew()
-            self.tollw = network_vehicles_data[self.id].get_tollw()
+            self.timew = network_vehicles_data[self.id].get_timew(individual_id)
+            self.tollw = network_vehicles_data[self.id].get_tollw(individual_id)
         else:
             self.random_destiny()
             self.timew = 0.5
@@ -80,12 +75,20 @@ class Vehicle():
         self.destiny = str(v) + str(h)
 
 class Edge():
-    def __init__(self, id, num_vehicles=[], times=[], costs=[], routes=[]) -> None:
+    def __init__(self, id, num_vehicles=[]) -> None:
         self.id = id
+        # list<int>
+        # num_vehicles[exec:int] = number of vehicles at execution exec
         self.num_vehicles = num_vehicles
-        self.times = times
-        self.costs = costs 
-        self.routes = routes
+    
+    def __str__(self) -> str:
+        return 'Edge [ {} ] = (num_vehicles: {})'.format(
+            self.id,
+            self.num_vehicles,
+        )
+
+    def updateNumberOfVehicles(self, numVehicles:int):
+        self.num_vehicles.append(numVehicles)
 
 class RouteSegment():
     def __init__(self, veh_id, edge_id, time_spent=0, cost_spent=0) -> None:
@@ -104,7 +107,7 @@ class RouteSegment():
         if cost_spent > 0 and self.cost_spent == 0: 
             self.cost_spent = deepcopy(cost_spent)
 
-    def update(self, time_spent, cost_spent=0):
+    def update(self, time_spent, cost_spent):
         self.update_time(time_spent)
         self.update_cost(cost_spent)
 
@@ -113,26 +116,33 @@ class RouteSegment():
             return True
         else:
             return False
+        
+    def isVehicle(self, veh_id):
+        if self.veh_id == veh_id:
+            return True
+        else:
+            return False
 
 class DataBase():
     def __init__(self, execution=FIRST_EXECUTION, vehicles={}, edges={}, route_segments=[]):
-        # int -> number of current execution
+        # current execution (int)
         self.execution = execution
-        # dict of Vehicle's
-        # [veh0, veh1, ...]
+        # dict<vehicle_id:string> = Vehicle
         self.vehicles = vehicles
-        # dict of Edge's
-        # [edge0, edge1, ...] 
+        # dict<edge_id:string> = Edge
         self.edges = edges
-        # list of lists.
-        # list[execution] -> [rs0, rs1, rs2, ...]
+        # list<list<RouteSegment>>
+        # list[exec:int] = list<RouteSegment>
         self.route_segments = route_segments
+        # dict<vehicle_id:string> = reseted:bool
+        self.reseted = {}
 
-    def from_str(self, vehicles:list, edges:list, freeflow:dict):
+    def from_str(self, individual_id: str, vehicles:list, edges:list, freeflow:dict):
         for vstr in vehicles:
             v = Vehicle(vstr)
-            v.from_str()
+            v.from_str(individual_id)
             self.vehicles[vstr] = deepcopy(v)
+            self.reseted[vstr] = True
 
         for estr in edges:
             e = Edge(estr)
@@ -142,27 +152,31 @@ class DataBase():
             for ekey in self.edges:
                 self.vehicles[vkey].set_free_flow_time(ekey, freeflow[ekey])
 
-    def add_vehicle(self, vehicle):
-        self.vehicles.append(vehicle)
-
-    def add_edge(self, edge):
-        self.edges.append(edge)
-    
     def add_route_segment(self, route_segment):
         self.route_segments[-1].append(route_segment)
 
     def new_execution(self):
         if self.execution >= 0:
-            self.update_experience()
+            self.updateVehiclesTimeExperiences()
+        for vkey in self.reseted:
+            self.reseted[vkey] = True
         self.route_segments.append([])
         self.execution += 1
 
-    def update_experience(self):
+    def updateEdgesNumberOfVehicles(self):
+        for ekey in self.edges:
+            numVehicles = 0
+            for vkey in self.vehicles:
+                numVehicles += len([rs for rs in self.route_segments[-1] if rs.equal(vkey, ekey)])
+            self.edges[ekey].updateNumberOfVehicles(numVehicles)
+
+    # to be checked
+    def updateVehiclesTimeExperiences(self):
         for vkey in self.vehicles:
             for ekey in self.edges:
                 time = sum([rs.time_spent for rs in self.route_segments[-1] if rs.equal(vkey, ekey)])
                 if time > 0:
-                    self.vehicles[vkey].update_experience(ekey, time)
+                    self.vehicles[vkey].updateTimeExperience(ekey, time)
     
     def to_csv(self, emission_path='/home/macsilva/Desktop/maslab/flow/data/vehicles.csv'):
         veh_header = ['veh_id','run','edge','time','cost','destiny','timew','tollw']
@@ -171,19 +185,18 @@ class DataBase():
             writer.writerow(veh_header)
             for exec in range(self.execution+1):
                 for vkey in self.vehicles:
-                    edges = self.vehicles[vkey].get_path(exec)
-                    for edge in edges:
-                        route_segments = [rs for rs in self.route_segments[exec] if rs.equal(vkey, edge)]
-                        writer.writerow([
-                            vkey, 
-                            exec, 
-                            edge, 
-                            route_segments[0].time_spent, 
-                            route_segments[0].cost_spent, 
-                            self.get_destiny(vkey), 
-                            self.vehicles[vkey].get_timew(),
-                            self.vehicles[vkey].get_tollw()])             
-
+                    route_segments = [rs for rs in self.route_segments[exec] if rs.isVehicle(vkey)]
+                    if route_segments:
+                        for rs in route_segments:
+                            writer.writerow([
+                                vkey, 
+                                exec, 
+                                rs.edge_id, 
+                                rs.time_spent, 
+                                rs.cost_spent, 
+                                self.get_destiny(vkey), 
+                                self.vehicles[vkey].get_timew(),
+                                self.vehicles[vkey].get_tollw()])            
 
     def get_destiny(self, veh_id):
         return self.vehicles[veh_id].get_destiny()
@@ -194,24 +207,19 @@ class DataBase():
     def get_timew(self, veh_id):
         return self.vehicles[veh_id].get_timew()
 
-    def could_add_path(self, veh_id):
-        # a vehicle should get a new path per execution
-        paths = self.vehicles[veh_id].get_paths()
-        if len(paths) < self.execution + 1:
-            return True
-        else:
-            return False
+    def ableToApplyDijkstra(self, veh_id):
+        return self.reseted[veh_id]
+    
+    def applyDijkstra(self, veh_id):
+        self.reseted[veh_id] = False
 
-    def add_path(self, veh_id, path):
-        self.vehicles[veh_id].add_path(path)
-
-    def get_expecience_time(self, veh_id, edge):
-        return self.vehicles[veh_id].get_expecience_time(edge)
+    def getExperiencedTime(self, veh_id, edge):
+        return self.vehicles[veh_id].getExperiencedTime(edge)
 
     def set_free_flow_time(self, veh_id, edge, free_flow):
         self.vehicles[veh_id].set_free_flow_time(edge, free_flow)
 
-    def update_route(self, veh_id, edge_id, timespent, costspent=0):
+    def update_route(self, veh_id, edge_id, timespent, costspent):
         route_segment = [rs for rs in self.route_segments[-1] if rs.equal(veh_id, edge_id)]
         if route_segment:
             route_segment[0].update(timespent, costspent)
@@ -219,20 +227,41 @@ class DataBase():
             self.add_route_segment(deepcopy(RouteSegment(veh_id, edge_id, timespent, costspent)))
 
     def terminate(self, emission_path=None):
-        if emission_path is not None:
+        if not emission_path is None:
             emission_path = emission_path + '/vehicles.csv'
         self.to_csv(emission_path)
 
+    
+    def print(self):
+        print('#Executions = {}'.format(self.execution))
+        print('\nVehicles:')
+        for v in self.vehicles:
+            print(self.vehicles[v])
+        print('\nEdges:')
+        for e in self.edges:
+            print(self.edges[e])
+        print('\nRoute Segments:')
+        for rs_list in self.route_segments:
+            print('\n--------')
+            for rs in rs_list:
+                print(rs)
+
 class myEnvironment(Env):
     def __init__(self, env_params, sim_params, network=None, simulator='traci', scenario=None):
-        self.database = DataBase()
+        individual_id = env_params.additional_params["individual_id"]
+        self.databases = {}
+        self.databases[individual_id] = DataBase()
         self.execution = FIRST_EXECUTION    
         super().__init__(env_params, sim_params, network, simulator, scenario)
         self.freeflow = {}
         self.costs = {}
         self.calculate_freeflow()
         self.calculate_costs(env_params)
-        self.database.from_str(self.initial_ids, self.k.network.get_edge_list(), self.freeflow)
+        self.databases[individual_id].from_str(
+            self.env_params.additional_params["individual_id"],
+            self.initial_ids, 
+            self.k.network.get_edge_list(), 
+            self.freeflow)
         self.network_system_optimal(env_params)
 
     @property
@@ -267,14 +296,17 @@ class myEnvironment(Env):
         ids = self.k.vehicle.get_ids()
         speeds = self.k.vehicle.get_speed(ids)
         return np.mean(speeds)
+    
+    def applyDijkstra(self, veh_id):
+        self.databases[self.env_params.additional_params['individual_id']].applyDijkstra(veh_id)
 
     def reset(self):    
         if self.execution == FIRST_EXECUTION:
-            
             edges_to_csv(self.k.network._edge_list, self.env_params.additional_params['edges_path'])
             junctions_to_csv(self.k.network._junction_list, self.env_params.additional_params['junctions_path'])
 
-        self.database.new_execution()
+        individual_id = self.env_params.additional_params['individual_id']
+        self.databases[individual_id].new_execution()
         self.execution += 1
 
         observation = super().reset()
@@ -282,30 +314,28 @@ class myEnvironment(Env):
             
     def terminate(self):
         # TODO: descobrir pq este metodo eh chamado 2x
-        emission_path = self.sim_params.emission_path
-        self.database.terminate(emission_path)
+        emission_path = self.env_params.additional_params['emission_path']
+        individual_id = self.env_params.additional_params['individual_id']
+        self.databases[individual_id].terminate(emission_path)
         super().terminate()
 
     def get_destiny(self, veh_id):
-        return self.database.get_destiny(veh_id)
+        return self.databases[self.env_params.additional_params['individual_id']].get_destiny(veh_id)
 
     def get_timew(self, veh_id):
-        return self.database.get_timew(veh_id)
+        return self.databases[self.env_params.additional_params['individual_id']].get_timew(veh_id)
 
     def get_tollw(self, veh_id):
-        return self.database.get_tollw(veh_id)
+        return self.databases[self.env_params.additional_params['individual_id']].get_tollw(veh_id)
+    
+    def ableToApplyDijkstra(self, veh_id):
+        return self.databases[self.env_params.additional_params['individual_id']].ableToApplyDijkstra(veh_id)
 
-    def could_add_path(self, veh_id):
-        return self.database.could_add_path(veh_id)
-
-    def add_path(self, veh_id, path):
-        self.database.add_path(veh_id, path)
-
-    def get_expecience_time(self, veh_id, edge):
-        time = self.database.get_expecience_time(veh_id, edge)
+    def getExperiencedTime(self, veh_id, edge):
+        time = self.databases[self.env_params.additional_params['individual_id']].getExperiencedTime(veh_id, edge)
         if time == None:
             ff = self.freeflow[edge]
-            self.database.set_free_flow_time(veh_id, edge, ff)
+            self.databases[self.env_params.additional_params['individual_id']].set_free_flow_time(veh_id, edge, ff)
             return ff
         else:
             return time
@@ -328,12 +358,12 @@ class myEnvironment(Env):
             for edge in edges:
                 self.costs[edge] = deepcopy(get_cost_from_input_file(edge))
             for junction in junctions:
-                self.costs[junction] = deepcopy(junctions_cost)
+                self.costs[junction] = junctions_cost
         else:
             quit()
 
     def update_vehicle_route(self, veh_id, edge_id):
-        self.database.update_route(veh_id, edge_id, self.sim_step, self.costs[edge_id])
+        self.databases[self.env_params.additional_params['individual_id']].update_route(veh_id, edge_id, self.sim_step, self.costs[edge_id])
 
     def freeflow_time(self, edge):
         distance = self.k.network.edge_length(edge)
@@ -346,10 +376,10 @@ class myEnvironment(Env):
             self.freeflow[edge] = deepcopy(self.freeflow_time(edge))
 
     def network_system_optimal(self, env_params):
-        # tau = 1, like: https://sumo.dlr.de/docs/Simulation/RoadCapacity.html
+        BOTTLENECK_CAPACITY = 10
 
         ### obtain network data ###
-        filepath = env_params.additional_params["systemoptimal_path"]
+        filepath = env_params.additional_params["sonet_path"]
         if not os.path.exists(filepath):
             edges = self.k.network.get_edge_list()
             edges_capacities_fftimes = []
@@ -365,7 +395,7 @@ class myEnvironment(Env):
                     nodes.append(u)
                 if v not in nodes:
                     nodes.append(v)
-                capacity = 20
+                capacity = BOTTLENECK_CAPACITY
                 fftime = int(self.freeflow_time(edge))
                 edges_capacities_fftimes.append((edge, capacity, fftime))
 
@@ -384,7 +414,8 @@ class myEnvironment(Env):
                 ### node ###
                 tn.write(node_header)
                 for n in nodes:
-                    tn.write("node " + n + "\n")
+                    if not 'Artificial' in n:
+                        tn.write("node {}\n".format(n))
 
                 ### edge ###
                 tn.write(edge_header)
@@ -392,30 +423,35 @@ class myEnvironment(Env):
                 #   t0 = free flow time
                 #   cUV = how many vehicles does UV support
                 for uv, Cuv, FFTuv in edges_capacities_fftimes:
-                    uv = uv.replace("from", "")
                     u, v = split_string_node_id(uv)
-                    tn.write("dedge {} {} {} BPR {} {}\n".format(
-                        u + "-" + v,
-                        u,
-                        v,
-                        FFTuv,
-                        Cuv,
-                    ))
+                    u = u.replace('from', '')
+                    if not 'Artificial' in u:
+                        tn.write("dedge {} {} {} BPR {} {}\n".format(
+                            u + "-" + v,
+                            u,
+                            v,
+                            FFTuv,
+                            Cuv,
+                        ))
 
                 ### od ###
                 tn.write(od_header)
                 ods = {}
                 for key in network_vehicles_data:
-                    if (not key == "start_positions") and (not key == "start_lanes"):
-                        o,d = network_vehicles_data[key].get_src_and_dst()
-                        od = o + "|" + d
+                    if  type(network_vehicles_data[key]) is InputFileVehicleData:
+                        uv = network_vehicles_data[key].get_first_edge()
+                        u, v = split_string_node_id(uv)
+                        dst = network_vehicles_data[key].get_termination_node()
+                        od = v + "|" + dst
                         if od not in ods:
                             ods[od] = 1
                         else:
                             ods[od] = ods[od] + 1
+                ods_string = ""
                 for od in ods:
                     o, d = od.split("|")
-                    tn.write("od {} {} {} {}\n".format(od, o, d, ods[od]))
+                    ods_string += "od {} {} {} {}\n".format(od, o, d, ods[od])
+                tn.write(ods_string[0:-1])
         
 def edges_to_csv(edges, edgespath):
     header = ["edge"]

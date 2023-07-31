@@ -2,6 +2,7 @@
 from copy import deepcopy
 import random
 import numpy as np
+import linecache
 
 from flow.controllers.base_routing_controller import BaseRouter
 from flow.networks.MyGrid import ADDITIONAL_NET_PARAMS
@@ -183,33 +184,43 @@ class MyGridRouterOnlyWhenVehiclesAreReseting(BaseRouter):
         edge = env.k.vehicle.get_edge(veh_id)
         env.update_vehicle_route(veh_id, edge)
         # if environment is reseting: apply dijkstra to get shortest path.
-        if env.could_add_path(veh_id):
+        if env.ableToApplyDijkstra(veh_id):
             route = gen_dijkstra_route(env, edge, veh_id)
             if len(route) > 0 and route[0] == edge:
-                env.add_path(veh_id, route)
                 return route
             else:
                 return None
         return super().choose_route(env)
 
-class MyGridRouterAppliedOnEachEdge(BaseRouter):
+class MyGridRouterUsingPredefinedRoutes(BaseRouter):
     def choose_route(self, env):
         veh_id = self.veh_id
         edge = env.k.vehicle.get_edge(veh_id)
-        env.update_current_vehicles_data(veh_id, edge)
-        if env.is_vehicle_reseting(veh_id):
-            route = gen_dijkstra_route(env, edge, veh_id)
-            env.vehicle_reseted(veh_id) 
-            if not route is None and route[0] == edge:
+        env.update_vehicle_route(veh_id, edge)
+        if env.ableToApplyDijkstra(veh_id):
+            # if environment is reseting: read routing file.
+            route = self.read_routes_file(env, veh_id)
+            if len(route) > 0 and route[0] == edge:
                 return route
             else:
                 return None
-        elif env.has_vehicle_changed_edge(veh_id):
-            print(veh_id)
-            route = gen_dijkstra_route(env, edge, veh_id)
-            env.set_vehicle_has_changed_lane_flag_false(veh_id) 
-            if not route is None and route[0] == edge:
-                return route
-            else:
-                return None
+        return super().choose_route(env)
+    
+    def read_routes_file(self, env, veh_id):
+        env.applyDijkstra(veh_id)
+        veh_id = self.veh_id
+        path = self.router_params['routes_path']
+        line = linecache.getline(path, int(veh_id.replace('human_', '')) + 1)
+        route = line.replace('\n','').split('-')
+        return route
+    
+# must be used with GeneticAlgorithmEnv
+class GeneticAlgorithmRouter(BaseRouter):
+    def choose_route(self, env):
+        # recovers vehicle and edge
+        vehId = self.veh_id
+        edgeId = env.k.vehicle.get_edge(vehId)
+        # updates vehicle's experience over edge edgeId
+        print("LOG: env.update for {}, {}".format(vehId, edgeId))
+        env.update(vehId, edgeId)
         return super().choose_route(env)

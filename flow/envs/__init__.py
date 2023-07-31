@@ -19,6 +19,7 @@ from flow.envs.bottleneck_env import DesiredVelocityEnv
 from flow.envs.green_wave_env import PO_TrafficLightGridEnv
 from flow.envs.green_wave_env import GreenWaveTestEnv
 from flow.envs.myEnvironment import myEnvironment
+from flow.envs.geneticAlgorithmEnv import GeneticAlgorithmEnv, OrtuzarEnv
 
 
 __all__ = [
@@ -39,6 +40,8 @@ __all__ = [
     'TestEnv',
     'BayBridgeEnv',
     'myEnvironment',
+    'GeneticAlgorithmEnv',
+    'OrtuzarEnv',
     # deprecated classes
     'BottleNeckAccelEnv',
     'DesiredVelocityEnv',

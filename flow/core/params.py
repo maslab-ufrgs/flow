@@ -616,7 +616,7 @@ class SumoParams(SimParams):
             sight_radius, show_radius, pxpm, force_color_update)
         self.port = port
         self.lateral_resolution = lateral_resolution
-        self.no_step_log = no_step_log
+        self.no_step_LOG: no_step_log
         self.seed = seed
         self.overtake_right = overtake_right
         self.print_warnings = print_warnings
