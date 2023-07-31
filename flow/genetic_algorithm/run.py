@@ -17,43 +17,25 @@ from flow.core.params import EnvParams
 from flow.core.params import SumoParams
 from flow.utils.newDijkstra import *
 
-homePrefix = "/home/macsilva/Desktop/maslab/flow/"
-labPrefix = "/home/lab204/Desktop/marco/maslab/flow/"
 paths = {
-    'graphPath' : "flow/genetic_algorithm/csv/graphs/OW.net",
-    'experiencedTimePath' : "flow/genetic_algorithm/csv/vehicles_experiences/experiencedTime.csv",
-    'freeFlowPath' : "flow/genetic_algorithm/csv/vehicles_experiences/freeFlowTime.csv",
-    'costsPath' : "flow/genetic_algorithm/csv/costs/costs.csv",
-    'weightsPath' : "flow/genetic_algorithm/csv/weights/",
-    'ow_dir' : "flow/genetic_algorithm/OW/Ortuzar10_1/",
-    'routesPath' : "flow/genetic_algorithm/csv/routes/dijks.xml",
-    'emissionPath' : "flow/genetic_algorithm/csv/emission/",
+    'graphPath' : "/csv/graphs/OW.net",
+    'experiencedTimePath' : "/csv/vehicles_experiences/",
+    'costsPath' : "/csv/costs/costs.csv",
+    'weightsPath' : "/csv/weights/",
+    'routesPath' :  "/csv/routes/",
+    'emissionPath' : "/csv/emission/",
 }
 
-
-class TemplateNetwork(Network):
-
-    def specify_routes(self, net_params):
-        return {
-            "A1A": ["A1A"],
-            "B1B" : ["B1B"],    
-            }
-
-def run(individual_id = 0, host='lab',num_runs=1, generateFreeFlowTime=False):
+def run(prefix, networkPath, vTypePath, freeFlowPath, individual_id = 0,num_runs=1, generateFreeFlowTime=False):
     ####################################################
     ## before starting the simulation, set the paths  ##
     ####################################################
-    if host == 'lab':
-        prefix = labPrefix
-    else:
-        prefix = homePrefix
+    individual_str = "individual_{}".format(individual_id)
     graphPath = prefix + paths['graphPath']
-    experiencedTimePath = prefix + paths['experiencedTimePath'].replace(".csv", "_") + str(individual_id) + ".csv"
+    experiencedTimePath = prefix + paths['experiencedTimePath'] + individual_str + ".csv"
     costsPath = prefix + paths['costsPath']
-    freeFlowPath = prefix + paths['freeFlowPath']
-    weightsPath = prefix + paths['weightsPath'] + "individual_" + str(individual_id) + ".csv"
-    ow_dir = prefix + paths['ow_dir']
-    routesPath = prefix + paths['routesPath'].replace("dijks", str(individual_id))
+    weightsPath = prefix + paths['weightsPath'] + individual_str + ".csv"
+    routesPath = prefix + paths['routesPath'] + individual_str + ".xml"
     emissionPath = prefix + paths['emissionPath']
     if os.path.exists(emissionPath + str(individual_id) + "/"):
         shutil.rmtree(emissionPath + str(individual_id) + "/")
@@ -81,8 +63,8 @@ def run(individual_id = 0, host='lab',num_runs=1, generateFreeFlowTime=False):
                 os.remove(emissionPath + f)
 
         env_params = EnvParams(
-            # horizon=100,
-            horizon=100000,
+            horizon=100,
+            # horizon=100000,
             additional_params={
             "freeflow_path":    freeFlowPath,
             "weights_path":     weightsPath,
@@ -90,9 +72,9 @@ def run(individual_id = 0, host='lab',num_runs=1, generateFreeFlowTime=False):
         })
         net_params = NetParams(
             template={
-                "net": os.path.join(ow_dir, "Network/ortuzar.net.xml"),
-                "vtype": os.path.join(ow_dir, "Network/vtypes.add.xml"),
-                "rou": routesPath,
+                "net":      networkPath,
+                "vtype":    vTypePath,
+                "rou":      routesPath,
             }
         )
 
@@ -123,11 +105,7 @@ def run(individual_id = 0, host='lab',num_runs=1, generateFreeFlowTime=False):
     shutil.rmtree(emissionPath)
     return time
 
-def remove_routes(individual_id:str, host:str):
-    if host == 'lab':
-        prefix = labPrefix
-    else:
-        prefix = homePrefix
+def remove_routes(prefix, individual_id:str):
     routesPath = prefix + paths['routesPath'].replace("dijks", str(individual_id))
     os.remove(routesPath)
     experiencedTimePath = prefix + paths['experiencedTimePath'].replace(".csv", "_") + str(individual_id) + ".csv"

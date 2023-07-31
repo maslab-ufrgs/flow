@@ -43,12 +43,6 @@ def parse_args(args):
         type=int, 
         default=1)
     parser.add_argument(
-        '--host', 
-        help="In which machine I am running the experiments (home, lab).", 
-        required=False, 
-        type=str,
-        default='lab')
-    parser.add_argument(
         '--load_state', 
         help="To load a previous execution state that was probably wrongly terminated.", 
         required=False, 

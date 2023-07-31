@@ -5,15 +5,16 @@ import random
 import csv
 import sys
 import pandas as pd
+import shutil
 from flow.genetic_algorithm.parser import parse_args
-from flow.genetic_algorithm.OW.run import *
+from flow.genetic_algorithm.run import *
 from multiprocessing import *
 
 
 DEFAULTVALUE = float('inf')
 
 class Individual:
-    def __init__(self, id, time_weights=[], toll_weights=[], host='lab', generation=0, value=DEFAULTVALUE) -> None:
+    def __init__(self, id, prefix, time_weights=[], toll_weights=[], generation=0, value=DEFAULTVALUE) -> None:
         self.id = id
         self.time_weights = time_weights
         self.toll_weights = toll_weights
@@ -22,7 +23,7 @@ class Individual:
         self.num_vehicles = len(self.time_weights)
         self.value = value
         self.mutationflag = False
-        self.weight_path = self.to_csv(host)
+        self.weight_path = self.to_csv(prefix)
     
     def __str__(self) -> str:
         return 'id: {};\ntimews: {};\ntollws: {};\nnum_vehicles: {};\nvalue: {};\n'.format(
@@ -69,14 +70,9 @@ class Individual:
         self.time_weights.append(timew)
         self.toll_weights.append(tollw)
 
-    def to_csv(self, host='lab'):
+    def to_csv(self, prefix):
         # individual = [(timew1, tollw1), (timew2, tollw2), ..., (timewM, tollwM)]
-        if host == 'lab':
-            path = '/home/lab204/Desktop/marco/maslab/flow/flow/genetic_algorithm/csv/weights/individual_{}.csv'.format(self.id)
-        elif host == 'home':
-            path = '/home/macsilva/Desktop/maslab/flow/flow/genetic_algorithm/csv/weights/individual_{}.csv'.format(self.id)
-        else:
-            quit('error -- to_csv -- invalid host!')
+        path = "{}/csv/weights/individual_{}.csv".format(prefix, self.id)
         veh_ids = ['human_{}'.format(i) for i in range(self.num_vehicles)]
         individual_dict = {
             'veh_id':veh_ids,
@@ -98,11 +94,12 @@ class Individual:
         self.mutationflag = False
         self.value = v
 
-    def get_value(self, num_runs, host, valuePath):
+    def get_value(self, prefix, networkPath, vTypePath, freeFlowPath, num_runs, valuePath):
         if not self.mutationflag and not self.value == DEFAULTVALUE:
             return self.value
         else:
-            self.set_value(run(self.id, host, num_runs))
+            v = run(prefix, networkPath, vTypePath, freeFlowPath, self.id, num_runs, False)
+            self.set_value(v)
             self.save_value(valuePath)
             return self.value
         
@@ -112,23 +109,18 @@ class Individual:
             writer.writerow([self.id, self.value, self.generation])
             file.close()
 
-def callGetValue(ind:Individual, num_runs, host, valuePath):
+def callGetValue(ind:Individual,prefix, networkPath, vTypePath, freeFlowPath, num_runs, valuePath):
     print("LOG: running flow over individual #{}".format(ind.id))
-    value = ind.get_value(num_runs, host, valuePath)
+    value = ind.get_value(prefix, networkPath, vTypePath, freeFlowPath, num_runs, valuePath)
     print("LOG: individual #{} has a value of {}".format(ind.id, value))
     return ind
 
 
 
-def ga(num_vehicles, pop_size, num_runs, valuePath, exp_tag, tournament_size=0, num_generations=1, host='lab', load_state=False):
-    state_path = ""
-    if host == 'home':
-        state_path = '/home/macsilva/Desktop/maslab/flow/flow/genetic_algorithm/csv/state/{}.csv'.format(exp_tag)
-    elif host == 'lab':
-        state_path = '/home/lab204/Desktop/marco/maslab/flow/flow/genetic_algorithm/csv/state/{}.csv'.format(exp_tag)
-    else:
-        quit('No host found')  
-  
+def ga(num_vehicles, pop_size, num_runs, exp_tag, prefix, networkPath, vTypePath, freeFlowPath, tournament_size=0, num_generations=1, load_state=False):
+    valuepath = prefix + "/csv/values/{}.csv".format(exp_tag)
+    bestpath = prefix + "/csv/best/{}.txt".format(exp_tag)
+    statepath = prefix + "/csv/state/{}.csv".format(exp_tag)
     if  0 < tournament_size <= pop_size:
         tsize = tournament_size
     else:
@@ -139,7 +131,7 @@ def ga(num_vehicles, pop_size, num_runs, valuePath, exp_tag, tournament_size=0, 
     num_individuals = deepcopy(pop_size)        
 
     if load_state:
-        loaded_state, last_state, num_individuals = loadState(state_path, host)
+        loaded_state, last_state, num_individuals = loadState(statepath, prefix)
         if last_state != None:
             p = deepcopy(loaded_state)
             generation = deepcopy(last_state)
@@ -151,30 +143,38 @@ def ga(num_vehicles, pop_size, num_runs, valuePath, exp_tag, tournament_size=0, 
         for ind in p:
             print("-> individual #{}, with value {} successfully loaded.".format(ind.id, ind.value))    
     else:
-        p = population(num_vehicles, pop_size, host, 0)
-        p = populationValue(p, num_runs, host, valuePath)
+        p = population(num_vehicles, pop_size, prefix, 0)
+        p = populationValue(p, prefix, networkPath, vTypePath, freeFlowPath, num_runs, valuepath)
         print("LOG: population generated with sucess.")
+        # generate new value path file
+        with open(valuepath, "w") as file:
+            writer = csv.writer(file)
+            writer.writerow(["individual_id", "value", "generation"])
+            file.close()
     
     while generation <= num_generations:
         generation += 1
         _p = []  
         while len(_p) < len(p):
-            mother = tournament(p, tsize, num_runs, host, valuePath)
-            father = tournament(p, tsize, num_runs, host, valuePath)
-            ind1, ind2, num_individuals = crossover(mother, father, num_vehicles, num_individuals, host, generation)
+            mother = tournament(p, tsize, prefix, networkPath, vTypePath, freeFlowPath, num_runs, valuepath)
+            father = tournament(p, tsize, prefix, networkPath, vTypePath, freeFlowPath, num_runs, valuepath)
+            ind1, ind2, num_individuals = crossover(mother, father, num_vehicles, num_individuals, prefix, generation)
             ind1.mutation(generation)
             ind2.mutation(generation)
             _p.append(ind1)
             _p.append(ind2)
-        _p = populationValue(_p, num_runs, host, valuePath)
-        p, _p = selection(p, _p, pop_size, num_runs, host, valuePath)
+        _p = populationValue(_p, prefix, networkPath, vTypePath, freeFlowPath, num_runs, valuepath)
+        # p, _p = selection(p, _p, pop_size, num_runs, host, valuePath)
+        p = deepcopy(_p)
         print("LOG: selected individuals and its values to be the next population P:")
         for i in p:
             print("id: {}, value: {}".format(i.id, i.value))
-        saveState(p, num_vehicles, generation, state_path, num_individuals)
-    return p[0] # best
+        saveState(p, num_vehicles, generation, statepath, num_individuals)
+    print("LOG: saving best individual!")
+    with open(bestpath, 'w') as file:
+        file.write(str(p[0]))
 
-def population(num_vehicles, pop_size, host, generation):
+def population(num_vehicles, pop_size, prefix, generation):
     p = []
     for i in range(pop_size):
         timews = []
@@ -184,15 +184,15 @@ def population(num_vehicles, pop_size, host, generation):
             tollw = 1 - timew
             timews.append(timew)
             tollws.append(tollw)
-        p.append(Individual(i, timews, tollws, host, generation))
+        p.append(Individual(i, prefix, timews, tollws, generation))
     return p
 
-def populationValue(population, num_runs, host, valuePath):
+def populationValue(population, prefix, networkPath, vTypePath, freeFlowPath, num_runs, valuePath):
     p = []
     with Pool() as pool:
         args = []
         for individual in population:
-            args.append((individual, num_runs, host, valuePath))
+            args.append((individual, prefix, networkPath, vTypePath, freeFlowPath, num_runs, valuePath))
         for result in pool.starmap(callGetValue, args):
             p.append(result)
             print("LOG: individual #{} has its value {} computed!".format(result.id, result.value))
@@ -200,16 +200,16 @@ def populationValue(population, num_runs, host, valuePath):
 
 
 # seleciona k individuos aleatoriamente
-def tournament(population, size, num_runs, host, valuePath):
+def tournament(population, size, prefix, networkPath, vTypePath, freeFlowPath, num_runs, valuePath):
     best = None
     bestv = float('inf')
     for index in random.sample(range(0, len(population)), size):
-        v = population[index].get_value(num_runs, host, valuePath)
+        v = population[index].get_value(prefix, networkPath, vTypePath, freeFlowPath, num_runs, valuePath)
         if v < bestv:
             best = deepcopy(population[index])
     return best
 
-def crossover(mother:Individual, father:Individual, num_vehicles:int, num_individuals:int, host:str, generation:int):
+def crossover(mother:Individual, father:Individual, num_vehicles:int, num_individuals:int, prefix:str, generation:int):
     i = random.randint(0, num_vehicles-2)
     j = random.randint(i+1, num_vehicles-1)
     mother_timews = deepcopy(mother.get_time_weights(i, j))
@@ -221,36 +221,36 @@ def crossover(mother:Individual, father:Individual, num_vehicles:int, num_indivi
     num_individuals += 1 
     i1 = Individual(
         id=deepcopy(num_individuals), 
+        prefix=prefix,
         time_weights=i1_timews,
         toll_weights=i1_tollws,
-        host=host,
         generation=generation)
     num_individuals += 1 
     i2 = Individual(
         id=deepcopy(num_individuals), 
+        prefix=prefix,
         time_weights=i2_timews,
         toll_weights=i2_tollws,
-        host=host,
         generation=generation)
     return i1, i2, num_individuals
 
-def selection(p, _p, pop_size,  num_runs, host, valuePath):
-    best_individuals = []
-    selection_poll = [ind for ind in p + _p]
-    for i in range(ceil(pop_size/2)):
-        best = max(
-            selection_poll, 
-            key=lambda ind: ind.get_value(num_runs, host, valuePath)
-        )
-        selection_poll.remove(best)
-        best_individuals.append(best)
-    normal_individuals = random.sample(selection_poll, floor(pop_size/2))
-    assert len(best_individuals) + len(normal_individuals) == pop_size
-    _p = []
-    for i in selection_poll:
-        if i.id not in [n.id for n in normal_individuals]: 
-            remove_routes(i.id, host)
-    return best_individuals + normal_individuals, _p
+# def selection(p, _p, pop_size,  num_runs, host, valuePath):
+#     best_individuals = []
+#     selection_poll = [ind for ind in p + _p]
+#     for i in range(ceil(pop_size/2)):
+#         best = max(
+#             selection_poll, 
+#             key=lambda ind: ind.get_value(num_runs, host, valuePath)
+#         )
+#         selection_poll.remove(best)
+#         best_individuals.append(best)
+#     normal_individuals = random.sample(selection_poll, floor(pop_size/2))
+#     assert len(best_individuals) + len(normal_individuals) == pop_size
+#     _p = []
+#     for i in selection_poll:
+#         if i.id not in [n.id for n in normal_individuals]: 
+#             remove_routes(i.id, host)
+#     return best_individuals + normal_individuals, _p
 
 
 def saveState(population, num_vehicles, last_state, state_path, num_individuals):
@@ -267,7 +267,7 @@ def saveState(population, num_vehicles, last_state, state_path, num_individuals)
             data = [last_state, num_individuals] + data
             writer.writerow(data)
 
-def loadState(state_path, host):
+def loadState(state_path, prefix):
     population = []
     last_state = 0
     num_individuals = 0
@@ -299,18 +299,12 @@ def loadState(state_path, host):
                     time_weights.append(float(value))
                 elif counter > 4 and counter % 2 == 0:
                     toll_weights.append(float(value))
-            # print(last_state)
-            # print(num_individuals)
-            print(id)
-            # print(ind_value)
-            # print(generation)
-            # print(time_weights)
-            # print(toll_weights)
+            print("LOG: creating individual #{}".format(id))
             ind = Individual(
                 id=id, 
+                prefix=prefix,
                 time_weights=time_weights, 
                 toll_weights=toll_weights, 
-                host=host, 
                 generation=generation,
                 value=ind_value)
             population.append(ind)
@@ -318,34 +312,44 @@ def loadState(state_path, host):
     else:
         return None, None, None
 
-
+prefix = os.getcwd()
 args = parse_args(sys.argv[1:])
-valuepath = ""
-if args.host == 'home':
-    bestpath = '/home/macsilva/Desktop/maslab/flow/flow/genetic_algorithm/csv/best/{}.txt'.format(args.exp_tag)
-    valuepath = '/home/macsilva/Desktop/maslab/flow/flow/genetic_algorithm/csv/values/{}.csv'.format(args.exp_tag)
-elif args.host == 'lab':
-    bestpath = '/home/lab204/Desktop/marco/maslab/flow/flow/genetic_algorithm/csv/best/{}.txt'.format(args.exp_tag)
-    valuepath = '/home/lab204/Desktop/marco/maslab/flow/flow/genetic_algorithm/csv/values/{}.csv'.format(args.exp_tag)
-else:
-    quit('No host found')
+dirlist = ["best", "costs", "emission", "graphs", "networks", "routes", "state", "values", "vehicles_experiences", "weights"]
 
-with open(valuepath, "w") as file:
-    writer = csv.writer(file)
-    writer.writerow(["individual_id", "value", "generation"])
-    file.close()
+for dir in dirlist: 
+    path = os.path.join(os.path.join(prefix, "csv"), dir)
+    if not os.path.exists(path):
+        os.mkdir(path)
 
-best = ga(
+######## OW NETWORKS SPECIFIC ##################
+fft_src = prefix + "/OW/freeFlowTime_backup.txt"
+fft_dst = fft_src.replace("_backup.txt", ".csv")
+if not os.path.exists(fft_dst):
+    shutil.copyfile(fft_src, fft_dst)
+net_src = prefix + "/OW/ortuzar.net.txt"
+net_dst = net_src.replace(".txt", ".xml")
+if not os.path.exists(net_dst):
+    shutil.copyfile(net_src, net_dst)
+rts_src = prefix + "/OW/routes_backup.txt"
+rts_dst = rts_src.replace("_backup.txt", ".xml")
+if not os.path.exists(rts_dst):
+    shutil.copyfile(rts_src, rts_dst)
+vtp_src = prefix + "/OW/vtypes.add.txt"
+vtp_dst = vtp_src.replace(".txt", ".xml")
+if not os.path.exists(vtp_dst):
+    shutil.copyfile(vtp_src, vtp_dst)
+################################################
+
+ga(
     args.num_vehicles, 
     args.pop_size, 
-    args.num_runs, 
-    valuepath,
+    args.num_runs,
     args.exp_tag,
+    prefix,
+    net_dst,
+    vtp_dst,
+    fft_dst,
     args.tournament_size, 
     args.num_generations, 
-    args.host,
     args.load_state
-    )
-
-with open(bestpath, 'w') as file:
-    file.write(str(best))
+)
