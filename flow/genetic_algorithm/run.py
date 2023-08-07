@@ -63,8 +63,8 @@ def run(prefix, networkPath, vTypePath, freeFlowPath, individual_id = 0,num_runs
                 os.remove(emissionPath + f)
 
         env_params = EnvParams(
-            horizon=100,
-            # horizon=100000,
+            # horizon=100,
+            horizon=100000,
             additional_params={
             "freeflow_path":    freeFlowPath,
             "weights_path":     weightsPath,
@@ -77,21 +77,29 @@ def run(prefix, networkPath, vTypePath, freeFlowPath, individual_id = 0,num_runs
                 "rou":      routesPath,
             }
         )
+        
+        sim_params = SumoParams(
+            port=individual_id,
+            render=False, 
+            sim_step=1, 
+            emission_path=emissionPath, 
+            no_step_log=True)
 
         flow_params = dict(
             exp_tag='template',
             env_name=GeneticAlgorithmEnv,
             network=Network,
             simulator='traci',
-            sim=SumoParams(render=False, sim_step=1, emission_path=emissionPath, no_step_log=True),
+            sim=sim_params,
             env=env_params,
             net=net_params,
             veh=VehicleParams(),
             initial=InitialConfig(edges_distribution="all"),
         )
-
+        print("LOG: starting simulation #{} for individual #{}".format(i, individual_id))
         exp = Experiment(flow_params)
         _ = exp.run(1, convert_to_csv=True)
+        print("LOG: ending simulation #{} for individual #{}".format(i, individual_id))
     
     
     emissionFiles = os.listdir(emissionPath)

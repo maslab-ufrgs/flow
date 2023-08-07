@@ -199,6 +199,7 @@ def populationValue(population, prefix, networkPath, vTypePath, freeFlowPath, nu
     return p
 
 
+
 # seleciona k individuos aleatoriamente
 def tournament(population, size, prefix, networkPath, vTypePath, freeFlowPath, num_runs, valuePath):
     best = None
